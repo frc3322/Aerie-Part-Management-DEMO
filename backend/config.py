@@ -17,8 +17,7 @@ class Config:
 
     # CORS settings
     CORS_ORIGINS = os.environ.get("CORS_ORIGINS") or [
-        "http://localhost:3000",
-        "http://localhost:5173",
+        "http://localhost:5000",
     ]
 
     # File upload settings
@@ -45,14 +44,17 @@ class ProductionConfig(Config):
     """Production configuration."""
 
     DEBUG = False
-    # In production, require environment variables to be set
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
-    SECRET_KEY = os.environ.get("SECRET_KEY")
 
-    if not SQLALCHEMY_DATABASE_URI:
-        raise ValueError("DATABASE_URL environment variable must be set in production")
-    if not SECRET_KEY:
-        raise ValueError("SECRET_KEY environment variable must be set in production")
+    def __init__(self):
+        super().__init__()
+        # In production, require environment variables to be set
+        self.SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+        self.SECRET_KEY = os.environ.get("SECRET_KEY")
+
+        if not self.SQLALCHEMY_DATABASE_URI:
+            raise ValueError("DATABASE_URL environment variable must be set in production")
+        if not self.SECRET_KEY:
+            raise ValueError("SECRET_KEY environment variable must be set in production")
 
 
 # Configuration mapping

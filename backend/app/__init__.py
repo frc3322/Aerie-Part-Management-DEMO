@@ -2,14 +2,14 @@
 
 import os
 import logging
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from config import config
 from models import db
 from routes import parts_bp
 
 
-def create_app(config_name: str = 'default') -> Flask:
+def create_app(config_name: str = "default") -> Flask:
     """Create and configure the Flask application.
 
     Args:
@@ -25,7 +25,7 @@ def create_app(config_name: str = 'default') -> Flask:
 
     # Initialize extensions
     db.init_app(app)
-    CORS(app, origins=app.config['CORS_ORIGINS'])
+    CORS(app, origins=app.config["CORS_ORIGINS"])
 
     # Configure logging
     logging.basicConfig(level=logging.INFO)
@@ -39,16 +39,45 @@ def create_app(config_name: str = 'default') -> Flask:
     # Register blueprints
     app.register_blueprint(parts_bp)
 
+    # Health check endpoint
+    @app.route("/health")
+    def health_check():
+        """Health check endpoint."""
+        return {"status": "healthy"}
+
+    # Configure static file serving for frontend
+    # Get the project root (parent of backend directory)
+    backend_dir = os.path.dirname(__file__)  # backend/app/
+    project_root = os.path.dirname(backend_dir)  # backend/
+    project_root = os.path.dirname(project_root)  # project root
+    dist_folder = os.path.join(project_root, "dist")
+
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def serve_frontend(path):
+        """Serve frontend files and handle SPA routing."""
+
+        # Try to serve the requested file
+        if path and os.path.exists(os.path.join(dist_folder, path)):
+            return send_from_directory(dist_folder, path)
+
+        # For SPA routing, serve index.html for non-API routes
+        if not path.startswith("api/"):
+            return send_from_directory(dist_folder, "index.html")
+
+        # Return 404 for unknown API routes
+        return {"error": "Not found"}, 404
+
     # Create database tables
     with app.app_context():
         db.create_all()
 
         # Create uploads directory if it doesn't exist
-        upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+        upload_folder = app.config.get("UPLOAD_FOLDER", "uploads")
         os.makedirs(upload_folder, exist_ok=True)
 
         # Initialize with sample data if in development
-        if config_name == 'development':
+        if config_name == "development":
             _init_sample_data()
 
     return app
@@ -66,56 +95,56 @@ def _init_sample_data():
     # Sample parts data
     sample_parts = [
         {
-            'type': 'cnc',
-            'name': 'Drive Gear',
-            'status': 'Pending',
-            'notes': 'Check tooth profile',
-            'file': 'gear.stl',
-            'onshape_url': '#',
-            'category': 'review'
+            "type": "cnc",
+            "name": "Drive Gear",
+            "status": "Pending",
+            "notes": "Check tooth profile",
+            "file": "gear.stl",
+            "onshape_url": "#",
+            "category": "review",
         },
         {
-            'type': 'cnc',
-            'name': 'Mounting Bracket',
-            'status': 'Approved',
-            'notes': 'High precision required',
-            'file': 'bracket.stl',
-            'onshape_url': '#',
-            'category': 'cnc',
-            'assigned': 'John Doe',
-            'claimed_date': datetime.now(timezone.utc) - timedelta(days=2)
+            "type": "cnc",
+            "name": "Mounting Bracket",
+            "status": "Approved",
+            "notes": "High precision required",
+            "file": "bracket.stl",
+            "onshape_url": "#",
+            "category": "cnc",
+            "assigned": "John Doe",
+            "claimed_date": datetime.now(timezone.utc) - timedelta(days=2),
         },
         {
-            'type': 'hand',
-            'name': 'Support Frame',
-            'status': 'In Progress',
-            'notes': 'Weld assembly required',
-            'file': 'frame.dwg',
-            'onshape_url': '#',
-            'category': 'hand',
-            'assigned': 'Jane Smith',
-            'claimed_date': datetime.now(timezone.utc) - timedelta(days=1)
+            "type": "hand",
+            "name": "Support Frame",
+            "status": "In Progress",
+            "notes": "Weld assembly required",
+            "file": "frame.dwg",
+            "onshape_url": "#",
+            "category": "hand",
+            "assigned": "Jane Smith",
+            "claimed_date": datetime.now(timezone.utc) - timedelta(days=1),
         },
         {
-            'type': 'hand',
-            'name': 'Control Panel',
-            'status': 'Completed',
-            'notes': 'Assembly completed and tested',
-            'file': 'panel.dwg',
-            'onshape_url': '#',
-            'category': 'completed',
-            'assigned': 'Bob Johnson'
+            "type": "hand",
+            "name": "Control Panel",
+            "status": "Completed",
+            "notes": "Assembly completed and tested",
+            "file": "panel.dwg",
+            "onshape_url": "#",
+            "category": "completed",
+            "assigned": "Bob Johnson",
         },
         {
-            'type': 'cnc',
-            'name': 'Precision Shaft',
-            'status': 'Pending',
-            'notes': 'Tight tolerances',
-            'file': 'shaft.stl',
-            'onshape_url': '#',
-            'category': 'review',
-            'subsystem': 'Drive System'
-        }
+            "type": "cnc",
+            "name": "Precision Shaft",
+            "status": "Pending",
+            "notes": "Tight tolerances",
+            "file": "shaft.stl",
+            "onshape_url": "#",
+            "category": "review",
+            "subsystem": "Drive System",
+        },
     ]
 
     # Add sample parts to database
