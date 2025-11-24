@@ -5,10 +5,101 @@ import os
 import sys
 import subprocess
 import argparse
+import json
 
 # Constants for repeated values
 DEFAULT_DATABASE_URL = "sqlite:///parts_prod.db"
+DEFAULT_CORS_ORIGINS = ["http://localhost:5000"]
 SECRET_KEY_WARNING = "   WARNING: Using auto-generated SECRET_KEY. Set SECRET_KEY environment variable in production!"
+
+
+def load_config() -> dict:
+    """Load configuration from config.json file if it exists.
+
+    Returns:
+        dict: Configuration dictionary, empty if config.json doesn't exist or is invalid
+    """
+    config_path = "config.json"
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r") as f:
+                config = json.load(f)
+                print(f"[DEPLOY] Loaded configuration from {config_path}")
+                return config
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"[DEPLOY] Warning: Failed to load {config_path}: {e}")
+            return {}
+    else:
+        print("[DEPLOY] No config.json found, using defaults")
+        return {}
+
+
+def get_config_value(config: dict, key: str, default: str = None) -> str:
+    """Get configuration value with precedence: env var > config > default.
+
+    Args:
+        config: Configuration dictionary from config.json
+        key: Configuration key to retrieve
+        default: Default value if not found in config or env
+
+    Returns:
+        str: The configuration value
+    """
+    # Environment variables take highest precedence
+    env_value = os.environ.get(key)
+    if env_value is not None:
+        return env_value
+
+    # Then config.json values
+    config_value = config.get(key)
+    if config_value is not None:
+        return config_value
+
+    # Finally defaults
+    return default
+
+
+def get_cors_origins(config: dict) -> list:
+    """Get CORS origins with precedence: env var > config > default.
+
+    Args:
+        config: Configuration dictionary from config.json
+
+    Returns:
+        list: List of CORS origins
+    """
+    env_value = os.environ.get("CORS_ORIGINS")
+    if env_value is not None:
+        try:
+            return json.loads(env_value)
+        except json.JSONDecodeError:
+            return [origin.strip() for origin in env_value.split(",") if origin.strip()]
+    
+    config_value = config.get("CORS_ORIGINS")
+    if config_value is not None:
+        return config_value
+    
+    return DEFAULT_CORS_ORIGINS
+
+
+def get_base_path(config: dict) -> str:
+    """Get BASE_PATH with precedence: env var > config > default.
+
+    Args:
+        config: Configuration dictionary from config.json
+
+    Returns:
+        str: The base path for deployment (e.g., /part-management-system or empty string)
+    """
+    env_value = os.environ.get("BASE_PATH")
+    if env_value is not None:
+        return env_value.rstrip("/")
+    
+    config_value = config.get("BASE_PATH", "")
+    if config_value:
+        return config_value.rstrip("/")
+    
+    return ""
 
 
 def run_command(command: str, description: str, env: dict = None) -> bool:
@@ -27,16 +118,12 @@ def run_command(command: str, description: str, env: dict = None) -> bool:
 
     try:
         subprocess.run(
-            command, shell=True, check=True, capture_output=True, text=True, env=env
+            command, shell=True, check=True, env=env
         )
         print("   SUCCESS")
         return True
     except subprocess.CalledProcessError as e:
         print(f"   FAILED with exit code {e.returncode}")
-        if e.stdout:
-            print(f"   stdout: {e.stdout}")
-        if e.stderr:
-            print(f"   stderr: {e.stderr}")
         return False
 
 
@@ -57,19 +144,32 @@ def run_development() -> bool:
     return run_command("uv run python run.py", "Starting development server")
 
 
-def run_production_multiworker(workers: int = 4, port: int = 8000) -> bool:
+def run_production_multiworker(config: dict, workers: int = 4, port: int = 8000) -> bool:
     """Run the application in production mode with multiple workers."""
     env = os.environ.copy()
-    if not env.get("DATABASE_URL"):
-        env["DATABASE_URL"] = DEFAULT_DATABASE_URL
-    if not env.get("SECRET_KEY"):
-        import secrets
 
-        env["SECRET_KEY"] = secrets.token_hex(32)
-        print(f"SECRET_KEY: {env['SECRET_KEY']}")
+    # Set configuration values with precedence: env > config > defaults
+    database_url = get_config_value(config, "DATABASE_URL", DEFAULT_DATABASE_URL)
+    env["DATABASE_URL"] = database_url
+
+    secret_key = get_config_value(config, "SECRET_KEY")
+    if not secret_key:
+        import secrets
+        secret_key = secrets.token_hex(32)
+        print(f"SECRET_KEY: {secret_key}")
         print(SECRET_KEY_WARNING)
-    if not env.get("FLASK_ENV"):
-        env["FLASK_ENV"] = "production"
+    env["SECRET_KEY"] = secret_key
+
+    flask_env = get_config_value(config, "FLASK_ENV", "production")
+    env["FLASK_ENV"] = flask_env
+
+    cors_origins = get_cors_origins(config)
+    env["CORS_ORIGINS"] = json.dumps(cors_origins)
+
+    base_path = get_base_path(config)
+    if base_path:
+        env["BASE_PATH"] = base_path
+        print(f"   BASE_PATH: {base_path}")
 
     command = f"uv run gunicorn -w {workers} -b 0.0.0.0:{port} run_prod:app"
     return run_command(
@@ -77,19 +177,32 @@ def run_production_multiworker(workers: int = 4, port: int = 8000) -> bool:
     )
 
 
-def run_production_eventlet(port: int = 8000) -> bool:
+def run_production_eventlet(config: dict, port: int = 8000) -> bool:
     """Run the application in production mode with eventlet (Linux/macOS only)."""
     env = os.environ.copy()
-    if not env.get("DATABASE_URL"):
-        env["DATABASE_URL"] = DEFAULT_DATABASE_URL
-    if not env.get("SECRET_KEY"):
-        import secrets
 
-        env["SECRET_KEY"] = secrets.token_hex(32)
-        print(f"SECRET_KEY: {env['SECRET_KEY']}")
+    # Set configuration values with precedence: env > config > defaults
+    database_url = get_config_value(config, "DATABASE_URL", DEFAULT_DATABASE_URL)
+    env["DATABASE_URL"] = database_url
+
+    secret_key = get_config_value(config, "SECRET_KEY")
+    if not secret_key:
+        import secrets
+        secret_key = secrets.token_hex(32)
+        print(f"SECRET_KEY: {secret_key}")
         print(SECRET_KEY_WARNING)
-    if not env.get("FLASK_ENV"):
-        env["FLASK_ENV"] = "production"
+    env["SECRET_KEY"] = secret_key
+
+    flask_env = get_config_value(config, "FLASK_ENV", "production")
+    env["FLASK_ENV"] = flask_env
+
+    cors_origins = get_cors_origins(config)
+    env["CORS_ORIGINS"] = json.dumps(cors_origins)
+
+    base_path = get_base_path(config)
+    if base_path:
+        env["BASE_PATH"] = base_path
+        print(f"   BASE_PATH: {base_path}")
 
     command = f"uv run gunicorn -k eventlet -w 1 -b 0.0.0.0:{port} run_prod:app"
     return run_command(
@@ -97,19 +210,32 @@ def run_production_eventlet(port: int = 8000) -> bool:
     )
 
 
-def run_production_gevent(workers: int = 4, port: int = 8000) -> bool:
+def run_production_gevent(config: dict, workers: int = 4, port: int = 8000) -> bool:
     """Run the application in production mode with gevent (Linux/macOS only)."""
     env = os.environ.copy()
-    if not env.get("DATABASE_URL"):
-        env["DATABASE_URL"] = DEFAULT_DATABASE_URL
-    if not env.get("SECRET_KEY"):
-        import secrets
 
-        env["SECRET_KEY"] = secrets.token_hex(32)
-        print(f"SECRET_KEY: {env['SECRET_KEY']}")
+    # Set configuration values with precedence: env > config > defaults
+    database_url = get_config_value(config, "DATABASE_URL", DEFAULT_DATABASE_URL)
+    env["DATABASE_URL"] = database_url
+
+    secret_key = get_config_value(config, "SECRET_KEY")
+    if not secret_key:
+        import secrets
+        secret_key = secrets.token_hex(32)
+        print(f"SECRET_KEY: {secret_key}")
         print(SECRET_KEY_WARNING)
-    if not env.get("FLASK_ENV"):
-        env["FLASK_ENV"] = "production"
+    env["SECRET_KEY"] = secret_key
+
+    flask_env = get_config_value(config, "FLASK_ENV", "production")
+    env["FLASK_ENV"] = flask_env
+
+    cors_origins = get_cors_origins(config)
+    env["CORS_ORIGINS"] = json.dumps(cors_origins)
+
+    base_path = get_base_path(config)
+    if base_path:
+        env["BASE_PATH"] = base_path
+        print(f"   BASE_PATH: {base_path}")
 
     command = f"uv run gunicorn -k gevent -w {workers} -b 0.0.0.0:{port} run_prod:app"
     return run_command(
@@ -119,21 +245,34 @@ def run_production_gevent(workers: int = 4, port: int = 8000) -> bool:
     )
 
 
-def run_production_waitress(port: int = 8000) -> bool:
+def run_production_waitress(config: dict, port: int = 8000) -> bool:
     """Run the application in production mode with Waitress (cross-platform)."""
     # Set environment variables for the subprocess
     env = os.environ.copy()
-    if not env.get("DATABASE_URL"):
-        env["DATABASE_URL"] = DEFAULT_DATABASE_URL
-    if not env.get("SECRET_KEY"):
+
+    # Set configuration values with precedence: env > config > defaults
+    database_url = get_config_value(config, "DATABASE_URL", DEFAULT_DATABASE_URL)
+    env["DATABASE_URL"] = database_url
+
+    secret_key = get_config_value(config, "SECRET_KEY")
+    if not secret_key:
         # Generate a random secret key for development - NOT for production!
         import secrets
-
-        env["SECRET_KEY"] = secrets.token_hex(32)
-        print(f"SECRET_KEY: {env['SECRET_KEY']}")
+        secret_key = secrets.token_hex(32)
+        print(f"SECRET_KEY: {secret_key}")
         print(SECRET_KEY_WARNING)
-    if not env.get("FLASK_ENV"):
-        env["FLASK_ENV"] = "production"
+    env["SECRET_KEY"] = secret_key
+
+    flask_env = get_config_value(config, "FLASK_ENV", "production")
+    env["FLASK_ENV"] = flask_env
+
+    cors_origins = get_cors_origins(config)
+    env["CORS_ORIGINS"] = json.dumps(cors_origins)
+
+    base_path = get_base_path(config)
+    if base_path:
+        env["BASE_PATH"] = base_path
+        print(f"   BASE_PATH: {base_path}")
 
     command = f"uv run waitress-serve --host=0.0.0.0 --port={port} run_prod:app"
     return run_command(
@@ -173,6 +312,9 @@ def main():
 
     args = parser.parse_args()
 
+    # Load configuration from config.json
+    config = load_config()
+
     # Set default port based on mode
     if args.mode == "dev" and args.port == 8000:
         args.port = 5000
@@ -203,13 +345,13 @@ def main():
     elif args.mode == "dev":
         success = run_development()
     elif args.mode == "prod-multi":
-        success = run_production_multiworker(args.workers, args.port)
+        success = run_production_multiworker(config, args.workers, args.port)
     elif args.mode == "prod-waitress":
-        success = run_production_waitress(args.port)
+        success = run_production_waitress(config, args.port)
     elif args.mode == "prod-eventlet":
-        success = run_production_eventlet(args.port)
+        success = run_production_eventlet(config, args.port)
     elif args.mode == "prod-gevent":
-        success = run_production_gevent(args.workers, args.port)
+        success = run_production_gevent(config, args.workers, args.port)
 
     if success:
         print("SUCCESS: Deployment completed successfully!")

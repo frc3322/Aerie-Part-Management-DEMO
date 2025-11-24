@@ -106,6 +106,26 @@ The API will be available at `http://localhost:5000`
 
 ## Configuration
 
+### Configuration File (config.json)
+
+You can optionally create a `config.json` file in the backend directory to set configuration values. This file will be read by the deployment script and can be used instead of or alongside environment variables.
+
+**Create configuration file:**
+```bash
+python create_config.py
+```
+
+**Example config.json:**
+```json
+{
+  "DATABASE_URL": "sqlite:///parts_prod.db",
+  "SECRET_KEY": "your-secure-secret-key-here",
+  "FLASK_ENV": "production"
+}
+```
+
+**Configuration precedence:** Environment Variables > config.json > Default Values
+
 ### Environment Variables
 
 - `FLASK_ENV`: Environment (`development`, `testing`, `production`)
@@ -233,17 +253,21 @@ For Windows production deployment, use Waitress instead of Gunicorn:
 uv run waitress-serve --host=0.0.0.0 --port=8000 run_prod:app
 ```
 
-Or use the deployment script (automatically sets required environment variables):
+Or use the deployment script (automatically sets required environment variables and reads config.json):
 ```bash
-# Using the deploy script (recommended - handles environment variables)
+# Using the deploy script (recommended - handles environment variables and config.json)
 uv run python deploy.py prod-waitress --port 8000
 ```
 
-**Environment Variables:**
-The deployment script automatically sets:
-- `DATABASE_URL=sqlite:///parts_prod.db` (if not already set)
-- `SECRET_KEY` (auto-generated for development, but shows warning)
-- `FLASK_ENV=production` (if not already set)
+**Configuration:**
+The deployment script automatically sets configuration values with this precedence:
+1. Environment variables (highest priority)
+2. Values from `config.json` file
+3. Auto-generated defaults (lowest priority)
+
+- `DATABASE_URL=sqlite:///parts_prod.db` (if not set in env or config.json)
+- `SECRET_KEY` (auto-generated if not set in env or config.json - shows warning)
+- `FLASK_ENV=production` (if not set in env or config.json)
 
 **⚠️ Security Warning:** The deployment script generates a random SECRET_KEY for convenience, but you should set your own secure SECRET_KEY in production.
 
