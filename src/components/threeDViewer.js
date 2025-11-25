@@ -217,7 +217,7 @@ export function loadGLTFModel(containerId, modelUrl) {
     renderer.domElement.addEventListener('mousedown', handleMouseDown);
     renderer.domElement.addEventListener('mousemove', handleMouseMove);
     renderer.domElement.addEventListener('mouseup', handleMouseUp);
-    renderer.domElement.addEventListener('wheel', handleWheel);
+    renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
 
     // Store references for cleanup and resize
     renderer.domElement._modelGroup = modelGroup;
