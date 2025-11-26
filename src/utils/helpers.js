@@ -13,7 +13,7 @@ export function filterParts(list, searchQuery) {
     return list.filter((part) => {
         return (
             part.name?.toLowerCase().includes(lowerQuery) ||
-            part.id?.toLowerCase().includes(lowerQuery) ||
+            String(part.id)?.toLowerCase().includes(lowerQuery) ||
             part.notes?.toLowerCase().includes(lowerQuery) ||
             part.subsystem?.toLowerCase().includes(lowerQuery) ||
             part.assigned?.toLowerCase().includes(lowerQuery) ||
