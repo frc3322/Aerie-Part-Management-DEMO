@@ -1,7 +1,8 @@
 // API Client Utility
 // Handles authenticated API calls to the backend
 
-import { appState } from '../modules/state.js';
+import { getApiKeyFromCookie } from './auth.js';
+import { showAuthModal } from '../modules/auth.js';
 
 /**
  * Get the base API URL
@@ -30,8 +31,9 @@ function getHeaders(includeContentType = true) {
     }
 
     // Add API key if available
-    if (appState.apiKey) {
-        headers['X-API-Key'] = appState.apiKey;
+    const apiKey = getApiKeyFromCookie();
+    if (apiKey) {
+        headers['X-API-Key'] = apiKey;
     }
 
     return headers;
@@ -55,8 +57,6 @@ async function apiRequest(endpoint, options = {}) {
 
         // Check if authentication failed
         if (response.status === 401) {
-            // Import auth module dynamically to avoid circular dependency
-            const { showAuthModal } = await import('../modules/auth.js');
             showAuthModal();
             throw new Error('Authentication required');
         }
@@ -188,7 +188,6 @@ export async function apiDownloadFile(endpoint, filename = null) {
         });
 
         if (response.status === 401) {
-            const { showAuthModal } = await import('../modules/auth.js');
             showAuthModal();
             throw new Error('Authentication required');
         }

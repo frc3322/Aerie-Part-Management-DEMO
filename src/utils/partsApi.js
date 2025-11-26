@@ -2,6 +2,7 @@
 // Handles all backend API calls for parts management
 
 import { apiGet, apiPost, apiPut, apiDelete, apiPostMultipart, apiDownloadFile } from './apiClient.js';
+import { getApiKeyFromCookie } from './auth.js';
 
 /**
  * Get all parts with optional filtering and pagination
@@ -152,11 +153,10 @@ export async function getPartModelBlobUrl(partId) {
     const basePath = base === '/' ? '' : base.replace(/\/$/, '');
     const url = basePath + `/api/parts/${partId}/model`;
     
-    const { appState } = await import('../modules/state.js');
-    
     const headers = {};
-    if (appState.apiKey) {
-        headers['X-API-Key'] = appState.apiKey;
+    const apiKey = getApiKeyFromCookie();
+    if (apiKey) {
+        headers['X-API-Key'] = apiKey;
     }
     
     const response = await fetch(url, { headers });

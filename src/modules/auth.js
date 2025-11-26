@@ -2,7 +2,7 @@
 // Handles the authentication popup and API key validation
 
 import { setApiKey, clearApiKey } from './state.js';
-import { setApiKeyCookie, checkAuthStatus } from '../utils/auth.js';
+import { setApiKeyCookie, checkAuthStatus, getApiKeyFromCookie } from '../utils/auth.js';
 
 /**
  * Show the authentication modal
@@ -145,15 +145,11 @@ export async function handleAuthSubmit(event) {
  * @returns {Promise<boolean>} True if authenticated, false if modal was shown
  */
 export async function checkAuthentication() {
-    const { getApiKeyFromCookie } = await import('../utils/auth.js');
-    const { setApiKey } = await import('./state.js');
-
     // Check if there's an API key in cookies
     const apiKey = getApiKeyFromCookie();
 
     if (apiKey) {
         // Try to validate the API key with the backend
-        const { checkAuthStatus } = await import('../utils/auth.js');
         const isValid = await checkAuthStatus(apiKey);
 
         if (isValid) {
