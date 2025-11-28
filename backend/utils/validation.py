@@ -1,13 +1,13 @@
 """Validation utilities for the Part Management System."""
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import re
 
 
 class ValidationError(Exception):
     """Custom exception for validation errors."""
 
-    def __init__(self, message: str, field: str = None):
+    def __init__(self, message: str, field: Optional[str] = None):
         """Initialize validation error.
 
         Args:
@@ -173,7 +173,7 @@ def _is_valid_url(url: str) -> bool:
     return url_pattern.match(url) is not None
 
 
-def validate_category_transition(current_category: str, new_category: str, part_type: str = None) -> bool:
+def validate_category_transition(current_category: str, new_category: str, part_type: Optional[str] = None) -> bool:
     """Validate if a category transition is allowed.
 
     Args:

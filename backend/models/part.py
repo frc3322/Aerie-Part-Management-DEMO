@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
+from typing import Optional
 
 db = SQLAlchemy()
 
@@ -113,7 +114,7 @@ class Part(db.Model):
         return cls.query.filter_by(category=category)
 
     @classmethod
-    def search_parts(cls, query: str, category: str = None):
+    def search_parts(cls, query: str, category: Optional[str] = None):
         """Search parts by name, notes, or subsystem.
 
         Args:

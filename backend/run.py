@@ -2,7 +2,7 @@
 """Main entry point for the Part Management System backend."""
 
 import os
-from app import create_app
+from app import create_app # type: ignore
 
 app = create_app(os.getenv('FLASK_ENV', 'development'))
 

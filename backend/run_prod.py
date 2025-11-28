@@ -2,7 +2,7 @@
 """Production entry point for the Part Management System backend using Gunicorn."""
 
 import sys
-from app import create_app
+from app import create_app # type: ignore
 
 # Create the Flask application for production
 app = create_app("production")

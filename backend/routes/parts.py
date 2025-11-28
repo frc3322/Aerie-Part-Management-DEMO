@@ -6,9 +6,9 @@ from pathlib import Path
 from werkzeug.utils import secure_filename
 from flask import Blueprint, request, jsonify, current_app, send_file
 from sqlalchemy import or_, desc, asc
-from models.part import Part, db
-from utils.auth import require_secret_key
-from utils.step_converter import convert_step_to_gltf
+from models.part import Part, db # type: ignore
+from utils.auth import require_secret_key # type: ignore
+from utils.step_converter import convert_step_to_gltf # type: ignore
 
 # Status constants
 STATUS_IN_PROGRESS = 'In Progress'

@@ -4,9 +4,9 @@ import os
 import logging
 from flask import Flask, request, send_from_directory
 from flask_cors import CORS
-from config import config
-from models import db
-from routes import parts_bp
+from config import config # type: ignore
+from models import db # type: ignore
+from routes import parts_bp # type: ignore
 
 
 def create_app(config_name: str = "default") -> Flask:
@@ -101,7 +101,7 @@ def create_app(config_name: str = "default") -> Flask:
 
 def _init_sample_data():
     """Initialize database with sample data for development."""
-    from models.part import Part
+    from models.part import Part # type: ignore
     from datetime import datetime, timedelta, timezone
 
     # Check if data already exists

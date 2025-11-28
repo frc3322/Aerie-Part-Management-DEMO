@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ DEFAULT_TOL_LINEAR = 0.1
 DEFAULT_TOL_ANGULAR = 0.5
 
 
-def convert_step_to_gltf(step_file_path: str, output_dir: str, output_filename: str = None) -> dict:
+def convert_step_to_gltf(step_file_path: str, output_dir: str, output_filename: Optional[str] = None) -> dict:
     """Convert a STEP file to GLTF/GLB format using cascadio.
 
     Args:
@@ -22,7 +23,7 @@ def convert_step_to_gltf(step_file_path: str, output_dir: str, output_filename: 
         dict: Conversion result with status, file path, and error message if any
     """
     try:
-        import cascadio
+        import cascadio # type: ignore
     except ImportError:
         return {
             'success': False,

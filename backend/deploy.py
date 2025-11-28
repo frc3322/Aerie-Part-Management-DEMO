@@ -6,6 +6,7 @@ import sys
 import subprocess
 import argparse
 import json
+from typing import Optional
 
 # Constants for repeated values
 DEFAULT_DATABASE_URL = "sqlite:///parts_prod.db"
@@ -34,7 +35,7 @@ def load_config() -> dict:
         return {}
 
 
-def get_config_value(config: dict, key: str, default: str = None) -> str:
+def get_config_value(config: dict, key: str, default: Optional[str] = None) -> str:
     """Get configuration value with precedence: env var > config > default.
 
     Args:
@@ -56,7 +57,7 @@ def get_config_value(config: dict, key: str, default: str = None) -> str:
         return config_value
 
     # Finally defaults
-    return default
+    return default or ""
 
 
 def get_cors_origins(config: dict) -> list:
@@ -102,7 +103,7 @@ def get_base_path(config: dict) -> str:
     return ""
 
 
-def run_command(command: str, description: str, env: dict = None) -> bool:
+def run_command(command: str, description: str, env: Optional[dict] = None) -> bool:
     """Run a shell command and return success status.
 
     Args:
