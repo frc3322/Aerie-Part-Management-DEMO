@@ -18,6 +18,7 @@ import {
 } from "../utils/partsApi.js";
 
 let pendingCompletionContext = null;
+let pendingAmountConfirmation = null;
 let storageModalInitialized = false;
 
 function initStorageModal() {
@@ -118,7 +119,12 @@ async function handleStorageSubmit(event) {
  */
 export async function markCompleted(fromTab, index, event) {
   const part = appState.parts[fromTab][index];
-  openStorageModal({ part, fromTab, index, triggerButton: event?.target });
+  const context = { part, fromTab, index, triggerButton: event?.target };
+  if (shouldConfirmAmount(part)) {
+    openCompleteAmountModal(context);
+    return;
+  }
+  openStorageModal(context);
 }
 
 /**
@@ -203,6 +209,7 @@ export function editPart(tab, index) {
   document.getElementById("input-name").value =
     type === "cnc" ? part.name : part.id;
   document.getElementById("input-material").value = part.material || "";
+  document.getElementById("input-amount").value = part.amount || 1;
   document.getElementById("input-status").value = part.status;
   document
     .getElementById("input-status")
@@ -384,3 +391,40 @@ export async function confirmUnclaim() {
 
 // Unclaim Modal Management
 let pendingUnclaimIndex = null;
+
+function shouldConfirmAmount(part) {
+  return Number.isFinite(part.amount) && part.amount > 1;
+}
+
+function openCompleteAmountModal(context) {
+  pendingAmountConfirmation = context;
+  const modal = document.getElementById("complete-amount-modal");
+  const message = document.getElementById("complete-amount-message");
+  const confirmButton = document.getElementById("complete-amount-confirm");
+  const cancelButton = document.getElementById("complete-amount-cancel");
+  if (!modal || !message || !confirmButton || !cancelButton) {
+    openStorageModal(context);
+    return;
+  }
+  message.innerText = `This part requires ${context.part.amount}. Have you completed all units?`;
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+  confirmButton.disabled = false;
+  cancelButton.disabled = false;
+}
+
+export function closeCompleteAmountModal() {
+  const modal = document.getElementById("complete-amount-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+  pendingAmountConfirmation = null;
+}
+
+export function confirmCompleteAmount() {
+  if (!pendingAmountConfirmation) return;
+  const context = pendingAmountConfirmation;
+  closeCompleteAmountModal();
+  openStorageModal(context);
+}
