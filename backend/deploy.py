@@ -171,6 +171,13 @@ def run_production_multiworker(
     config: dict, workers: int = 4, port: int = 8000
 ) -> bool:
     """Run the application in production mode with multiple workers."""
+    if sys.platform.startswith("win"):
+        print(
+            "[DEPLOY] Gunicorn is not available on Windows. "
+            "Falling back to Waitress (threads)."
+        )
+        return run_production_waitress(config, port)
+
     env = os.environ.copy()
 
     # Set configuration values with precedence: env > config > defaults
