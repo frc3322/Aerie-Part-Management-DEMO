@@ -118,16 +118,99 @@ def validate_misc_info(data: Dict[str, Any]) -> Dict[str, Any]:
     for key, value in raw_misc.items():
         if not isinstance(key, str):
             raise ValidationError("misc_info keys must be strings", "misc_info")
-        if value is None:
+        cleaned_value = _clean_misc_value(value)
+        if cleaned_value is None:
             continue
-        if not isinstance(value, (str, int, float)):
-            raise ValidationError(
-                "misc_info values must be string or number", "misc_info"
-            )
-        cleaned[key] = value
+        cleaned[key] = cleaned_value
 
     validated_data["misc_info"] = cleaned if cleaned else None
     return validated_data
+
+
+def _clean_misc_value(value: Any) -> Any:
+    """Normalize a misc_info value while enforcing allowed types.
+
+    Args:
+        value: Raw misc_info value.
+
+    Returns:
+        Any: Cleaned value or None if the entry should be skipped.
+
+    Raises:
+        ValidationError: If the value type is unsupported.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (str, int, float)):
+        return value
+    if isinstance(value, list):
+        return _validate_misc_list_value(value)
+    if isinstance(value, dict):
+        return _validate_misc_dict_value(value)
+    raise ValidationError(
+        "misc_info values must be string, number, list, or object", "misc_info"
+    )
+
+
+def _validate_misc_list_value(raw_list: Any) -> list[Any]:
+    """Validate list entries within misc_info payload.
+
+    Args:
+        raw_list: Candidate list value from misc_info.
+
+    Returns:
+        list[Any]: Cleaned list with supported item types preserved.
+
+    Raises:
+        ValidationError: If any item is of an unsupported type.
+    """
+    if not isinstance(raw_list, list):
+        raise ValidationError("misc_info list must be an array", "misc_info")
+    validated_items: list[Any] = []
+    for item in raw_list:
+        if item is None:
+            continue
+        if isinstance(item, (str, int, float)):
+            validated_items.append(item)
+            continue
+        if isinstance(item, dict):
+            validated_items.append(_validate_misc_dict_value(item))
+            continue
+        raise ValidationError(
+            "misc_info list items must be string, number, or object", "misc_info"
+        )
+    return validated_items
+
+
+def _validate_misc_dict_value(raw_dict: Any) -> Dict[str, Any]:
+    """Validate nested object stored within misc_info.
+
+    Args:
+        raw_dict: Candidate dictionary value from misc_info.
+
+    Returns:
+        Dict[str, Any]: Cleaned dictionary with string keys and primitive values.
+
+    Raises:
+        ValidationError: If keys or values are invalid.
+    """
+    if not isinstance(raw_dict, dict):
+        raise ValidationError("misc_info object must be a dictionary", "misc_info")
+    cleaned_dict: Dict[str, Any] = {}
+    for nested_key, nested_value in raw_dict.items():
+        if not isinstance(nested_key, str):
+            raise ValidationError(
+                "misc_info object keys must be strings", "misc_info"
+            )
+        if nested_value is None:
+            continue
+        if isinstance(nested_value, (str, int, float)):
+            cleaned_dict[nested_key] = nested_value
+            continue
+        raise ValidationError(
+            "misc_info object values must be string or number", "misc_info"
+        )
+    return cleaned_dict
 
 
 def validate_numeric_fields(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -137,24 +220,37 @@ def validate_numeric_fields(data: Dict[str, Any]) -> Dict[str, Any]:
 
     for field, default_value in numeric_fields.items():
         if field in data:
-            value = data[field]
-            if value is None or value == "":
-                validated_data[field] = default_value
-                continue
-
-            if isinstance(value, bool):
-                raise ValidationError(f"{field} must be a number", field)
-
-            try:
-                parsed_value = int(value)
-            except (TypeError, ValueError):
-                raise ValidationError(f"{field} must be a number", field)
-
-            if parsed_value <= 0:
-                raise ValidationError(f"{field} must be greater than 0", field)
-
-            validated_data[field] = parsed_value
+            validated_data[field] = _parse_positive_int(
+                data[field], field, default_value
+            )
     return validated_data
+
+
+def _parse_positive_int(value: Any, field: str, default_value: int) -> int:
+    """Parse and validate positive integer input.
+
+    Args:
+        value: Raw value to parse.
+        field: Field name for error messaging.
+        default_value: Default to use when value is empty.
+
+    Returns:
+        int: Parsed positive integer.
+
+    Raises:
+        ValidationError: If parsing fails or value is not positive.
+    """
+    if value is None or value == "":
+        return default_value
+    if isinstance(value, bool):
+        raise ValidationError(f"{field} must be a number", field)
+    try:
+        parsed_value = int(value)
+    except (TypeError, ValueError):
+        raise ValidationError(f"{field} must be a number", field)
+    if parsed_value <= 0:
+        raise ValidationError(f"{field} must be greater than 0", field)
+    return parsed_value
 
 
 def validate_part_type(validated_data: Dict[str, Any]) -> None:

@@ -3,6 +3,7 @@
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Dict, List
 from werkzeug.utils import secure_filename
 from flask import Blueprint, request, jsonify, current_app, send_file
 from sqlalchemy import or_, desc, asc
@@ -35,6 +36,48 @@ def _merge_misc_info(existing_misc, incoming_misc):
     if isinstance(incoming_misc, dict):
         base.update(incoming_misc)
     return base if base else None
+
+
+def _build_worker_entry(worker_name: str) -> Dict[str, str]:
+    """Create a worker log entry with timestamp.
+
+    Args:
+        worker_name: Name of the worker to log.
+
+    Returns:
+        Dict[str, str]: Worker log entry containing name and ISO timestamp.
+    """
+    return {"name": worker_name, "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+def _append_hand_worker(existing_misc: Any, worker_name: str) -> Dict[str, Any]:
+    """Append a worker entry to the hand fab worker log in misc_info.
+
+    Args:
+        existing_misc: Existing misc_info payload.
+        worker_name: Name of the worker to record.
+
+    Returns:
+        Dict[str, Any]: Updated misc_info with the worker log preserved in order.
+    """
+    if not worker_name:
+        return existing_misc if isinstance(existing_misc, dict) else {}
+    misc_copy: Dict[str, Any] = existing_misc.copy() if isinstance(existing_misc, dict) else {}
+    raw_log = misc_copy.get("handWorkers") or misc_copy.get("hand_workers") or []
+    normalized_log: List[Dict[str, str]] = []
+    if isinstance(raw_log, list):
+        for item in raw_log:
+            if not isinstance(item, dict):
+                continue
+            name_value = item.get("name")
+            timestamp_value = item.get("timestamp")
+            if isinstance(name_value, str) and isinstance(timestamp_value, str):
+                normalized_log.append(
+                    {"name": name_value, "timestamp": timestamp_value}
+                )
+    normalized_log.append(_build_worker_entry(worker_name))
+    misc_copy["handWorkers"] = normalized_log
+    return misc_copy
 
 
 @parts_bp.route("/", methods=["GET"])
@@ -173,6 +216,9 @@ def create_part():
         part = Part()
         part.update_from_dict(data)
 
+        if part.type == "hand" and part.assigned:
+            part.misc_info = _append_hand_worker(part.misc_info, part.assigned)
+
         db.session.add(part)
         db.session.commit()
 
@@ -225,6 +271,8 @@ def update_part(part_id):
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
+        previous_assigned = part.assigned
+
         if "subsystem" in data:
             subsystem = data.get("subsystem")
             if subsystem is None or str(subsystem).strip() == "":
@@ -258,6 +306,9 @@ def update_part(part_id):
                 return jsonify({"error": exc.message, "field": exc.field}), 400
 
         part.update_from_dict(data)
+
+        if part.type == "hand" and part.assigned and part.assigned != previous_assigned:
+            part.misc_info = _append_hand_worker(part.misc_info, part.assigned)
         db.session.commit()
 
         return jsonify(part.to_dict())
@@ -367,6 +418,8 @@ def assign_part(part_id):
         part.assigned = data["assigned"]
         part.claimed_date = datetime.now(timezone.utc)
         part.status = STATUS_IN_PROGRESS
+        if part.type == "hand":
+            part.misc_info = _append_hand_worker(part.misc_info, part.assigned)
 
         db.session.commit()
 

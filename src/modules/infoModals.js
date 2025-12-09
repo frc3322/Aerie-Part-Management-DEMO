@@ -195,6 +195,53 @@ function toggleInfoModal(show) {
   }
 }
 
+function extractHandWorkers(miscInfo) {
+  const log = miscInfo?.handWorkers || miscInfo?.hand_workers;
+  if (!Array.isArray(log)) return [];
+  return log
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const name = typeof entry.name === "string" ? entry.name : null;
+      const timestamp = typeof entry.timestamp === "string" ? entry.timestamp : null;
+      if (!name) return null;
+      return { name, timestamp };
+    })
+    .filter(Boolean);
+}
+
+function stripHandWorkers(miscInfo) {
+  if (!miscInfo) return {};
+  const cleaned = { ...miscInfo };
+  delete cleaned.handWorkers;
+  delete cleaned.hand_workers;
+  return cleaned;
+}
+
+function formatWorkerTimestamp(timestamp) {
+  if (!timestamp) return "Time not recorded";
+  const parsed = new Date(timestamp);
+  if (Number.isNaN(parsed.getTime())) return "Time not recorded";
+  return parsed.toLocaleString();
+}
+
+function renderHandWorkersSection(workers) {
+  const hasWorkers = workers.length > 0;
+  const items = hasWorkers
+    ? workers
+        .map(
+          (worker) => `<div class="flex justify-between text-sm">
+            <span class="text-blue-200 font-semibold">${worker.name}</span>
+            <span class="text-xs text-gray-400">${formatWorkerTimestamp(worker.timestamp)}</span>
+          </div>`
+        )
+        .join("")
+    : '<div class="text-sm text-gray-500">No workers recorded.</div>';
+  return `<div class="border border-gray-800 rounded-lg p-3 shadow-3d-inset">
+    <div class="text-sm text-gray-400 mb-2">Hand fab workers</div>
+    ${items}
+  </div>`;
+}
+
 function renderMiscItems(miscInfo) {
   if (!miscInfo || Object.keys(miscInfo).length === 0) {
     return '<div class="text-sm text-gray-500">No misc info saved.</div>';
@@ -213,7 +260,10 @@ function renderMiscItems(miscInfo) {
 export function showPartInfo(part) {
   ensureInfoModal();
   const body = document.getElementById("info-body");
-  const miscSection = renderMiscItems(part.miscInfo || part.misc_info || {});
+  const miscInfo = part.miscInfo || part.misc_info || {};
+  const handWorkers = extractHandWorkers(miscInfo);
+  const miscSection = renderMiscItems(stripHandWorkers(miscInfo));
+  const workersSection = renderHandWorkersSection(handWorkers);
   const contextBits = [
     part.status
       ? `<div><span class="text-gray-400 text-sm">Status:</span> <span class="text-blue-300 font-semibold">${part.status}</span></div>`
@@ -231,6 +281,7 @@ export function showPartInfo(part) {
   if (body) {
     body.innerHTML = `
       ${contextBits}
+      ${workersSection}
       <div class="border border-gray-800 rounded-lg p-3 shadow-3d-inset">
         <div class="text-sm text-gray-400 mb-2">Misc info</div>
         ${miscSection}
