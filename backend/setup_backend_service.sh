@@ -11,7 +11,7 @@ service_group="${SERVICE_GROUP:-$service_user}"
 service_port="${SERVICE_PORT:-5000}"
 service_mode="${SERVICE_MODE:-prod-multi}"
 uv_bin="${UV_BIN:-$(command -v uv || true)}"
-python_bin="${PYTHON_BIN:-python3}"
+python_bin="${PYTHON_BIN:-python3.12}"
 sudo_bin=""
 [[ $EUID -ne 0 ]] && sudo_bin="sudo"
 
@@ -44,6 +44,22 @@ install_uv() {
 ensure_directories() {
   if [[ ! -d "$backend_dir" ]]; then
     printf "Backend directory not found at %s\n" "$backend_dir" >&2
+    exit 1
+  fi
+}
+
+ensure_supported_python() {
+  require_command "$python_bin" "Install Python 3.12 or set PYTHON_BIN."
+  local py_version
+  py_version="$("$python_bin" - <<'PY'
+import sys
+print(f"{sys.version_info.major}.{sys.version_info.minor}")
+PY
+)"
+  local major="${py_version%%.*}"
+  local minor="${py_version##*.}"
+  if [[ "$major" -ne 3 || "$minor" -gt 12 ]]; then
+    printf "Python %s detected. cascadio supports up to 3.12. Install Python 3.12 and rerun, or set PYTHON_BIN.\n" "$py_version" >&2
     exit 1
   fi
 }
@@ -91,7 +107,7 @@ enable_service() {
 
 main() {
   require_command systemctl "systemd is required."
-  require_command "$python_bin" "Install Python 3."
+  ensure_supported_python
   ensure_directories
   install_uv
   create_virtualenv
