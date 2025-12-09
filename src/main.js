@@ -1,4 +1,5 @@
 import "./style.css";
+import meowImageUrl from "./Meow.png";
 
 // Tailwind config (moved from script tag)
 globalThis.tailwind = {
@@ -119,6 +120,19 @@ function initializeTooltips(root = document) {
     titledElements.forEach(applyTooltip);
 }
 
+function renderCat() {
+    if (document.getElementById("cat")) return;
+    const shell = document.createElement("div");
+    shell.id = "cat";
+    shell.className = "cat";
+    const image = document.createElement("img");
+    image.src = meowImageUrl;
+    image.alt = "Hello from my gf!";
+    image.loading = "lazy";
+    shell.append(image);
+    document.body.append(shell);
+}
+
 const tooltipObserver = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
         mutation.addedNodes.forEach((node) => {
@@ -146,6 +160,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     initializeTooltips();
     tooltipObserver.observe(document.body, { childList: true, subtree: true });
+    renderCat();
 
     detectMobileDevice();
     configureMobileUI();

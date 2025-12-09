@@ -204,3 +204,25 @@ body {
     background: #25193a;
     color: #d3b3ff;
 }
+
+.cat {
+    position: fixed;
+    bottom: -40px;
+    left: 16px;
+    width: 30px;
+    opacity: 0.12;
+    transition: opacity 0.2s ease, bottom 0.2s ease;
+    filter: brightness(0) invert(1) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+    z-index: 4;
+}
+
+.cat img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.cat:hover {
+    bottom: -10px;
+    opacity: 0.9;
+}
