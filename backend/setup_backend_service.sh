@@ -3,7 +3,7 @@ set -euo pipefail
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 backend_dir="$project_root/backend"
-venv_path="${VENV_PATH:-$backend_dir/.venv}"
+venv_path="${VENV_PATH:-$project_root/.venv}"
 service_name="${SERVICE_NAME:-part-management-backend.service}"
 service_file="/etc/systemd/system/$service_name"
 service_user="${SERVICE_USER:-$(whoami)}"
@@ -11,7 +11,6 @@ service_group="${SERVICE_GROUP:-$service_user}"
 service_port="${SERVICE_PORT:-5000}"
 service_mode="${SERVICE_MODE:-prod-multi}"
 uv_bin="${UV_BIN:-$(command -v uv || true)}"
-python_bin="${PYTHON_BIN:-python3.12}"
 sudo_bin=""
 [[ $EUID -ne 0 ]] && sudo_bin="sudo"
 
@@ -48,30 +47,12 @@ ensure_directories() {
   fi
 }
 
-ensure_supported_python() {
-  require_command "$python_bin" "Install Python 3.12 or set PYTHON_BIN."
-  local py_version
-  py_version="$("$python_bin" - <<'PY'
-import sys
-print(f"{sys.version_info.major}.{sys.version_info.minor}")
-PY
-)"
-  local major="${py_version%%.*}"
-  local minor="${py_version##*.}"
-  if [[ "$major" -ne 3 || "$minor" -gt 12 ]]; then
-    printf "Python %s detected. cascadio supports up to 3.12. Install Python 3.12 and rerun, or set PYTHON_BIN.\n" "$py_version" >&2
-    exit 1
-  fi
-}
-
 create_virtualenv() {
-  "$uv_bin" venv "$venv_path" --python "$python_bin"
+  "$uv_bin" venv "$venv_path"
 }
 
 install_requirements() {
-  source "$venv_path/bin/activate"
-  "$uv_bin" pip install -r "$backend_dir/requirements.txt"
-  deactivate
+  (cd "$project_root" && "$uv_bin" sync)
 }
 
 write_service_file() {
@@ -107,7 +88,6 @@ enable_service() {
 
 main() {
   require_command systemctl "systemd is required."
-  ensure_supported_python
   ensure_directories
   install_uv
   create_virtualenv
