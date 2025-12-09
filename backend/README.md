@@ -361,6 +361,12 @@ export CORS_ORIGINS="https://yourdomain.com"
 5. **SSL/TLS**: Enable HTTPS in production
 6. **Process Management**: Use systemd, supervisor, or Docker for process management
 
+### Systemd setup script (Linux)
+
+- Run `bash backend/setup_backend_service.sh` to install uv, create `.venv`, install `requirements.txt`, write `/etc/systemd/system/part-management-backend.service`, reload systemd, enable, and start the service.
+- Override defaults via env vars before running: `SERVICE_USER`, `SERVICE_GROUP`, `SERVICE_PORT`, `SERVICE_MODE`, `SERVICE_NAME`, `VENV_PATH`, `UV_BIN`, `PYTHON_BIN`.
+- Requires `systemd` and sudo for service installation.
+
 ### Docker Example
 
 ```dockerfile
