@@ -15,6 +15,17 @@ import {
     getPart,
 } from "../utils/partsApi.js";
 
+function getMaterialInputValue() {
+    const materialSelect = document.getElementById("input-material-select");
+    const customMaterialInput = document.getElementById(
+        "input-material-custom"
+    );
+    if (!materialSelect || !customMaterialInput) return "";
+    return materialSelect.value === "custom"
+        ? customMaterialInput.value
+        : materialSelect.value;
+}
+
 function setUploadStatus(state) {
     const statusEl = document.getElementById("upload-status");
     if (!statusEl) return;
@@ -62,7 +73,7 @@ export function extractFormData() {
         type: document.getElementById("input-category").value,
         name: document.getElementById("input-name").value,
         partId: document.getElementById("input-part-id").value,
-        material: document.getElementById("input-material").value,
+        material: getMaterialInputValue(),
         amount: Number.parseInt(
             document.getElementById("input-amount").value,
             10

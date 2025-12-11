@@ -5,6 +5,8 @@ import { appState } from "./state.js";
 import { saveTabVisibility } from "./persistence.js";
 import { hideActionIconKey, showActionIconKey } from "./auth.js";
 
+const MATERIAL_OPTIONS = ["Polycarb", "Aluminum", "Acrylic"];
+
 /**
  * Open the settings modal
  */
@@ -104,6 +106,7 @@ export function openAddModal(isNew = false) {
             "No file chosen";
         document.getElementById("input-onshape").value = "";
         document.getElementById("input-amount").value = "1";
+        setMaterialField(MATERIAL_OPTIONS[0]);
         handleCategoryChange("cnc");
     }
 
@@ -162,4 +165,50 @@ export function updateFileName() {
     const input = document.getElementById("input-file");
     const display = document.getElementById("file-name-display");
     if (input.files.length > 0) display.innerText = input.files[0].name;
+}
+
+export function handleMaterialChange(selectedValue) {
+    const materialSelect = document.getElementById("input-material-select");
+    const customInput = document.getElementById("input-material-custom");
+    if (!materialSelect || !customInput) return;
+
+    if (selectedValue) {
+        materialSelect.value = selectedValue;
+    }
+
+    const isCustom = materialSelect.value === "custom";
+    customInput.classList.toggle("hidden", !isCustom);
+    customInput.disabled = !isCustom;
+    if (isCustom) {
+        customInput.focus();
+    }
+}
+
+export function setMaterialField(materialValue = "") {
+    const normalizedMaterial = materialValue?.trim() || "";
+    const materialSelect = document.getElementById("input-material-select");
+    const customInput = document.getElementById("input-material-custom");
+    if (!materialSelect || !customInput) return;
+
+    const matchingOption = MATERIAL_OPTIONS.find(
+        (option) => option.toLowerCase() === normalizedMaterial.toLowerCase()
+    );
+
+    if (matchingOption) {
+        materialSelect.value = matchingOption;
+        customInput.value = "";
+        handleMaterialChange(matchingOption);
+        return;
+    }
+
+    if (normalizedMaterial.length > 0) {
+        materialSelect.value = "custom";
+        customInput.value = normalizedMaterial;
+        handleMaterialChange("custom");
+        return;
+    }
+
+    materialSelect.value = MATERIAL_OPTIONS[0];
+    customInput.value = "";
+    handleMaterialChange(MATERIAL_OPTIONS[0]);
 }

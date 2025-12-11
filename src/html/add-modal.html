@@ -84,11 +84,22 @@
                 <label class="block text-sm font-bold mb-2 text-gray-400"
                     >Material</label
                 >
+                <select
+                    id="input-material-select"
+                    onchange="handleMaterialChange(this.value)"
+                    class="neumorphic-input w-full p-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400"
+                >
+                    <option value="Polycarb">Polycarb</option>
+                    <option value="Aluminum">Aluminum</option>
+                    <option value="Acrylic">Acrylic</option>
+                    <option value="custom">Custom</option>
+                </select>
                 <input
                     type="text"
-                    id="input-material"
-                    class="neumorphic-input w-full p-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400"
-                    required
+                    id="input-material-custom"
+                    class="neumorphic-input w-full p-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 mt-3 hidden"
+                    placeholder="Enter custom material"
+                    disabled
                 />
             </div>
 

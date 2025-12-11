@@ -6,7 +6,11 @@ import { renderReview } from "./review.js";
 import { renderCNC } from "./cnc.js";
 import { renderHandFab } from "./handFab.js";
 import { renderCompleted } from "./completed.js";
-import { openAddModal, handleCategoryChange } from "./modals.js";
+import {
+    openAddModal,
+    handleCategoryChange,
+    setMaterialField,
+} from "./modals.js";
 import { hideActionIconKey, showActionIconKey } from "./auth.js";
 import {
     approvePart as apiApprovePart,
@@ -189,7 +193,7 @@ export function editPart(tab, index) {
     document.getElementById("input-name").value = part.name || "";
     document.getElementById("input-part-id").value =
         part.partId || part.name || part.id || "";
-    document.getElementById("input-material").value = part.material || "";
+    setMaterialField(part.material || "");
     document.getElementById("input-amount").value = part.amount || 1;
     document.getElementById("input-status").value = part.status;
     document

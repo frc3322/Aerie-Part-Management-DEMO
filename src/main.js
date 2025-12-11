@@ -47,6 +47,7 @@ import {
     openAddModal,
     closeModal,
     handleCategoryChange,
+    handleMaterialChange,
     updateFileName,
 } from "./modules/modals.js";
 import {
@@ -277,6 +278,7 @@ const actionExports = {
     openAddModal,
     closeModal,
     handleCategoryChange,
+    handleMaterialChange,
     updateFileName,
     handleFormSubmit,
     markCompleted,
