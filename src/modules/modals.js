@@ -4,6 +4,11 @@
 import { appState } from "./state.js";
 import { saveTabVisibility } from "./persistence.js";
 import { hideActionIconKey, showActionIconKey } from "./auth.js";
+import { getCurrentTab, switchTab } from "./tabs.js";
+import {
+    openModal as openManagedModal,
+    closeModal as closeManagedModal,
+} from "../utils/modalManager.js";
 
 const MATERIAL_OPTIONS = ["Polycarb", "Aluminum", "Acrylic"];
 
@@ -11,27 +16,34 @@ const MATERIAL_OPTIONS = ["Polycarb", "Aluminum", "Acrylic"];
  * Open the settings modal
  */
 export function openSettingsModal() {
-    const modal = document.getElementById("settings-modal");
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
-    hideActionIconKey();
+    openManagedModal("settings-modal", {
+        onOpen: hideActionIconKey,
+    });
 }
 
 /**
  * Close the settings modal
  */
 export function closeSettingsModal() {
-    const modal = document.getElementById("settings-modal");
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
-    showActionIconKey();
+    closeManagedModal("settings-modal", {
+        onClose: showActionIconKey,
+    });
 }
 
 /**
  * Toggle tab visibility in settings
- * @param {string} tab - The tab to toggle
+ * @param {Event|string} eventOrTab - Change event or tab name string
  */
-export function toggleTabVisibility(tab) {
+export function toggleTabVisibility(eventOrTab) {
+    let tab;
+    if (typeof eventOrTab === "string") {
+        tab = eventOrTab;
+    } else if (eventOrTab && eventOrTab.target) {
+        // Get tab from data-tab attribute
+        tab = eventOrTab.target.dataset.tab;
+    }
+
+    if (!tab) return;
     const checkbox = document.getElementById(`check-${tab}`);
     const btn = document.getElementById(`tab-${tab}`);
     const isVisible = checkbox.checked;
@@ -59,25 +71,6 @@ export function toggleTabVisibility(tab) {
 }
 
 /**
- * Get the current active tab
- * @returns {string} The current tab name
- */
-function getCurrentTab() {
-    const activeTab = document.querySelector(".active-tab");
-    return activeTab ? activeTab.id.replace("tab-", "") : "review";
-}
-
-/**
- * Switch to a different tab
- * @param {string} tab - The tab to switch to
- */
-function switchTab(tab) {
-    if (typeof globalThis.switchTab === "function") {
-        globalThis.switchTab(tab);
-    }
-}
-
-/**
  * Open the add/edit part modal
  * @param {boolean} isNew - Whether this is a new part (true) or editing existing (false)
  */
@@ -85,9 +78,9 @@ export function openAddModal(isNew = false) {
     const modal = document.getElementById("modal");
     const form = document.getElementById("part-form");
 
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
-    hideActionIconKey();
+    openManagedModal("modal", {
+        onOpen: hideActionIconKey,
+    });
 
     if (isNew) {
         document.getElementById("modal-title").innerText =
@@ -117,16 +110,24 @@ export function openAddModal(isNew = false) {
  * Close the add/edit part modal
  */
 export function closeModal() {
-    document.getElementById("modal").classList.add("hidden");
-    document.getElementById("modal").classList.remove("flex");
-    showActionIconKey();
+    closeManagedModal("modal", {
+        onClose: showActionIconKey,
+    });
 }
 
 /**
  * Handle category change in the form
- * @param {string} type - The category type ('cnc' or 'hand')
+ * @param {Event|string} eventOrType - Change event or category type string
  */
-export function handleCategoryChange(type) {
+export function handleCategoryChange(eventOrType) {
+    let type;
+    if (typeof eventOrType === "string") {
+        type = eventOrType;
+    } else if (eventOrType && eventOrType.target) {
+        type = eventOrType.target.value;
+    } else {
+        return;
+    }
     const subField = document.getElementById("field-subsystem");
     const assignField = document.getElementById("field-assigned");
     const fileField = document.getElementById("field-file");
@@ -167,7 +168,16 @@ export function updateFileName() {
     if (input.files.length > 0) display.innerText = input.files[0].name;
 }
 
-export function handleMaterialChange(selectedValue) {
+export function handleMaterialChange(eventOrValue) {
+    let selectedValue;
+    if (typeof eventOrValue === "string") {
+        selectedValue = eventOrValue;
+    } else if (eventOrValue && eventOrValue.target) {
+        selectedValue = eventOrValue.target.value;
+    } else {
+        return;
+    }
+
     const materialSelect = document.getElementById("input-material-select");
     const customInput = document.getElementById("input-material-custom");
     if (!materialSelect || !customInput) return;

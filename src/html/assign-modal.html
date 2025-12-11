@@ -21,7 +21,7 @@
             Please enter your name to start working on this part.
         </p>
 
-        <form onsubmit="event.preventDefault(); confirmAssignment();">
+        <form data-action="confirmAssignment">
             <div class="mb-6">
                 <label class="block text-sm font-bold mb-2 text-gray-400"
                     >Your Name</label
@@ -37,7 +37,7 @@
             <div class="flex justify-end gap-4">
                 <button
                     type="button"
-                    onclick="closeAssignModal()"
+                    data-action="closeAssignModal"
                     class="text-gray-400 hover:text-white px-4 py-2"
                 >
                     Cancel

@@ -82,6 +82,10 @@ import {
     refreshDrawing,
 } from "./modules/drawingViewer.js";
 import { showPartInfo } from "./modules/infoModals.js";
+import {
+    initEventDelegation,
+    registerActions,
+} from "./utils/eventDelegation.js";
 
 const REFRESH_NOTICE_DELAY_MS = 5 * 60 * 1000;
 let refreshNoticeTimerId = null;
@@ -211,17 +215,6 @@ const tooltipObserver = new MutationObserver((mutations) => {
     }
 });
 
-/**
- * Attach a map of UI actions to the global scope for legacy handlers.
- * @param {Record<string, Function>} actionMap
- */
-function registerGlobalActions(actionMap) {
-    globalThis.appActions = actionMap;
-    Object.entries(actionMap).forEach(([key, value]) => {
-        globalThis[key] = value;
-    });
-}
-
 // Initialize application
 document.addEventListener("DOMContentLoaded", async () => {
     initializeAuthModal();
@@ -266,7 +259,10 @@ globalThis.addEventListener("resize", () => {
     ) {
         appState.currentTab = "review";
     }
-    switchTab(appState.currentTab);
+    // Only switch tabs and load data if authenticated
+    if (appState.isAuthenticated) {
+        switchTab(appState.currentTab);
+    }
 });
 
 const actionExports = {
@@ -307,4 +303,5 @@ const actionExports = {
     downloadStepFile,
 };
 
-registerGlobalActions(actionExports);
+registerActions(actionExports);
+initEventDelegation();

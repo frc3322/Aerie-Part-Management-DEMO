@@ -3,6 +3,7 @@
 
 import { appState } from "./state.js";
 import { filterParts } from "../utils/helpers.js";
+import { createElement, renderList } from "../utils/templateHelpers.js";
 
 /**
  * Generate empty state message for review tab
@@ -65,50 +66,94 @@ export function createReviewRow(part, index) {
     const previewHTML = generateReviewPreviewHTML(part);
     const fileHTML = generateReviewFileHTML(part);
 
-    const row = document.createElement("tr");
-    row.className =
-        "border-b border-gray-800 hover:bg-gray-800 transition duration-200";
-    row.innerHTML = `
-        <td class="p-3 align-middle">
-            <span class="px-2 py-1 rounded text-xs font-bold ${
-                isCNC
-                    ? "bg-blue-900 text-blue-200"
-                    : "bg-purple-900 text-purple-200"
-            } border border-white/10">
-                ${isCNC ? "CNC" : "HAND FAB"}
-            </span>
-        </td>
-        <td class="p-3 align-middle">
-            ${previewHTML}
-        </td>
-        <td class="p-3 align-middle">
-            <div class="font-bold text-gray-200">${displayName}</div>
-            <div class="text-xs text-gray-500">ID: ${displayPartId}</div>
-        </td>
-        <td class="p-3 align-middle text-sm text-gray-400">${subDisplay}</td>
-        <td class="p-3 align-middle text-sm text-blue-300 font-semibold">${
-            part.material || "Not set"
-        }</td>
-        <td class="p-3 align-middle">
-             ${fileHTML}
-        </td>
-        <td class="p-3 align-middle text-sm text-gray-500 max-w-xs truncate">${
-            part.notes || ""
-        }</td>
-        <td class="p-3 align-middle">
-            <div class="flex items-center gap-2 whitespace-nowrap">
-                <button onclick="globalThis.approvePart(${index})" class="neumorphic-btn px-3 py-1 text-green-400 text-sm rounded hover:text-green-300" title="Approve & Move">
-                    <i class="fa-solid fa-check"></i> Review
-                </button>
-                ${
-                    appState.isMobile
-                        ? ""
-                        : `<button onclick="globalThis.editPart('review', ${index})" class="text-gray-400 hover:text-blue-400 px-2"><i class="fa-solid fa-pen"></i></button>`
-                }
-                <button onclick="globalThis.deletePart('review', ${index})" class="text-gray-400 hover:text-red-400 px-2"><i class="fa-solid fa-trash"></i></button>
-            </div>
-        </td>
-    `;
+    const row = createElement("tr", {
+        className:
+            "border-b border-gray-800 hover:bg-gray-800 transition duration-200",
+    });
+
+    const typeCell = createElement("td", {
+        className: "p-3 align-middle",
+    });
+    const typeBadge = createElement("span", {
+        className: `px-2 py-1 rounded text-xs font-bold ${
+            isCNC
+                ? "bg-blue-900 text-blue-200"
+                : "bg-purple-900 text-purple-200"
+        } border border-white/10`,
+        text: isCNC ? "CNC" : "HAND FAB",
+    });
+    typeCell.appendChild(typeBadge);
+
+    const previewCell = createElement("td", {
+        className: "p-3 align-middle",
+    });
+    previewCell.innerHTML = previewHTML;
+
+    const nameCell = createElement("td", { className: "p-3 align-middle" });
+    nameCell.innerHTML = `<div class="font-bold text-gray-200">${displayName}</div><div class="text-xs text-gray-500">ID: ${displayPartId}</div>`;
+
+    const subsystemCell = createElement("td", {
+        className: "p-3 align-middle text-sm text-gray-400",
+        text: subDisplay,
+    });
+
+    const materialCell = createElement("td", {
+        className: "p-3 align-middle text-sm text-blue-300 font-semibold",
+        text: part.material || "Not set",
+    });
+
+    const fileCell = createElement("td", { className: "p-3 align-middle" });
+    fileCell.innerHTML = fileHTML;
+
+    const notesCell = createElement("td", {
+        className: "p-3 align-middle text-sm text-gray-500 max-w-xs truncate",
+        text: part.notes || "",
+    });
+
+    const actionsCell = createElement("td", {
+        className: "p-3 align-middle",
+    });
+    const actionsWrapper = createElement("div", {
+        className: "flex items-center gap-2 whitespace-nowrap",
+    });
+
+    const approveButton = createElement("button", {
+        className:
+            "neumorphic-btn px-3 py-1 text-green-400 text-sm rounded hover:text-green-300",
+        attrs: { title: "Approve & Move" },
+        dataset: { action: "approvePart", index },
+    });
+    approveButton.innerHTML = `<i class="fa-solid fa-check"></i> Review`;
+
+    const editButton = createElement("button", {
+        className: "text-gray-400 hover:text-blue-400 px-2",
+        dataset: { action: "editPart", tab: "review", index },
+        attrs: { title: "Edit part" },
+    });
+    editButton.innerHTML = `<i class="fa-solid fa-pen"></i>`;
+
+    const deleteButton = createElement("button", {
+        className: "text-gray-400 hover:text-red-400 px-2",
+        dataset: { action: "deletePart", tab: "review", index },
+        attrs: { title: "Delete part" },
+    });
+    deleteButton.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+
+    actionsWrapper.appendChild(approveButton);
+    if (!appState.isMobile) actionsWrapper.appendChild(editButton);
+    actionsWrapper.appendChild(deleteButton);
+    actionsCell.appendChild(actionsWrapper);
+
+    row.append(
+        typeCell,
+        previewCell,
+        nameCell,
+        subsystemCell,
+        materialCell,
+        fileCell,
+        notesCell,
+        actionsCell
+    );
     return row;
 }
 
@@ -131,8 +176,6 @@ export function renderReview() {
         return;
     }
 
-    tbody.innerHTML = "";
-
     const filtered = filterParts(appState.parts.review, appState.searchQuery);
 
     if (filtered.length === 0) {
@@ -140,11 +183,9 @@ export function renderReview() {
         emptyMsg.innerHTML = generateEmptyMessageReview();
     } else {
         emptyMsg.classList.add("hidden");
-        for (const part of filtered) {
-            // Find original index for actions
+        renderList(tbody, filtered, (part) => {
             const index = appState.parts.review.indexOf(part);
-            const row = createReviewRow(part, index);
-            tbody.appendChild(row);
-        }
+            return createReviewRow(part, index);
+        });
     }
 }

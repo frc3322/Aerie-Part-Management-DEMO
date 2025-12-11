@@ -41,15 +41,15 @@ function createCompletedCard(part, index) {
     <div class="mobile-card-actions mt-3">
       ${
           showInfoButton
-              ? `<button onclick="globalThis.viewPartInfo('completed', ${index})" class="mobile-icon-btn text-gray-300" aria-label="Info">
+              ? `<button data-action="viewPartInfo" data-tab="completed" data-index="${index}" class="mobile-icon-btn text-gray-300" aria-label="Info">
         <i class="fa-solid fa-circle-info"></i>
       </button>`
               : ""
       }
-      <button onclick="globalThis.markUncompleted(${index})" class="mobile-icon-btn text-yellow-300" aria-label="Restore">
+      <button data-action="markUncompleted" data-index="${index}" class="mobile-icon-btn text-yellow-300" aria-label="Restore">
         <i class="fa-solid fa-rotate-left"></i>
       </button>
-      <button onclick="globalThis.deletePart('completed', ${index})" class="mobile-icon-btn text-red-300" aria-label="Delete">
+      <button data-action="deletePart" data-tab="completed" data-index="${index}" class="mobile-icon-btn text-red-300" aria-label="Delete">
         <i class="fa-solid fa-trash"></i>
       </button>
     </div>
@@ -98,11 +98,11 @@ export function createCompletedRow(part, index) {
             part.notes || ""
         }</td>
         <td class="p-3">
-            <button onclick="globalThis.viewPartInfo('completed', ${index})" class="text-gray-400 hover:text-blue-300 mr-2" title="Info"><i class="fa-solid fa-circle-info"></i></button>
-            <button onclick="globalThis.markUncompleted(${index})" class="neumorphic-btn px-3 py-1 text-yellow-400 hover:text-yellow-300 mr-2 text-sm" title="Un-complete (Restore)">
+            <button data-action="viewPartInfo" data-tab="completed" data-index="${index}" class="text-gray-400 hover:text-blue-300 mr-2" title="Info"><i class="fa-solid fa-circle-info"></i></button>
+            <button data-action="markUncompleted" data-index="${index}" class="neumorphic-btn px-3 py-1 text-yellow-400 hover:text-yellow-300 mr-2 text-sm" title="Un-complete (Restore)">
                 <i class="fa-solid fa-rotate-left"></i> Restore
             </button>
-            <button onclick="globalThis.deletePart('completed', ${index})" class="text-gray-400 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
+            <button data-action="deletePart" data-tab="completed" data-index="${index}" class="text-gray-400 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
         </td>
     `;
     return row;

@@ -103,23 +103,23 @@ export function createHandFabRow(part, index) {
         <td class="p-3">
             ${
                 showStartButton
-                    ? `<button onclick="globalThis.markInProgress('hand', ${index})" class="neumorphic-btn px-2 py-1 text-blue-400 hover:text-blue-300 mr-2" title="Start Work / Claim"><i class="fa-solid fa-play"></i></button>`
+                    ? `<button data-action="markInProgress" data-tab="hand" data-index="${index}" class="neumorphic-btn px-2 py-1 text-blue-400 hover:text-blue-300 mr-2" title="Start Work / Claim"><i class="fa-solid fa-play"></i></button>`
                     : ""
             }
             ${
                 showCompleteButton
-                    ? `<button onclick="globalThis.markCompleted('hand', ${index})" class="neumorphic-btn px-2 py-1 text-green-400 hover:text-green-300 mr-2" title="Mark Completed"><i class="fa-solid fa-check-circle"></i></button>`
+                    ? `<button data-action="markCompleted" data-tab="hand" data-index="${index}" class="neumorphic-btn px-2 py-1 text-green-400 hover:text-green-300 mr-2" title="Mark Completed"><i class="fa-solid fa-check-circle"></i></button>`
                     : ""
             }
             ${
                 part.assigned && part.assigned !== ""
-                    ? `<button onclick="globalThis.unclaimPart(${index})" class="neumorphic-btn px-2 py-1 text-orange-400 hover:text-orange-300 mr-2" title="Unclaim Part"><i class="fa-solid fa-user-slash"></i></button>`
+                    ? `<button data-action="unclaimPart" data-index="${index}" class="neumorphic-btn px-2 py-1 text-orange-400 hover:text-orange-300 mr-2" title="Unclaim Part"><i class="fa-solid fa-user-slash"></i></button>`
                     : ""
             }
-            <button onclick="globalThis.viewPartInfo('hand', ${index})" class="text-gray-400 hover:text-blue-300 mr-2" title="Info"><i class="fa-solid fa-circle-info"></i></button>
-            <button ${hasDrawing ? "" : "disabled"} onclick="${
-        hasDrawing ? `globalThis.viewHandDrawing(${index})` : ""
-    }" class="neumorphic-btn px-2 py-1 ${
+            <button data-action="viewPartInfo" data-tab="hand" data-index="${index}" class="text-gray-400 hover:text-blue-300 mr-2" title="Info"><i class="fa-solid fa-circle-info"></i></button>
+            <button ${
+                hasDrawing ? "" : "disabled"
+            } data-action="viewHandDrawing" data-index="${index}" class="neumorphic-btn px-2 py-1 ${
         hasDrawing
             ? "text-purple-300 hover:text-purple-200"
             : "text-gray-500 cursor-not-allowed opacity-50"
@@ -128,8 +128,8 @@ export function createHandFabRow(part, index) {
     }">
                 <i class="fa-solid fa-print"></i>
             </button>
-            <button onclick="globalThis.editPart('hand', ${index})" class="text-gray-400 hover:text-blue-400 mr-2"><i class="fa-solid fa-pen"></i></button>
-            <button onclick="globalThis.deletePart('hand', ${index})" class="text-gray-400 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
+            <button data-action="editPart" data-tab="hand" data-index="${index}" class="text-gray-400 hover:text-blue-400 mr-2"><i class="fa-solid fa-pen"></i></button>
+            <button data-action="deletePart" data-tab="hand" data-index="${index}" class="text-gray-400 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
         </td>
     `;
     return row;
@@ -165,47 +165,47 @@ function createHandFabCard(part, index) {
     <div class="mobile-card-actions mt-3">
       ${
           showStartButton
-              ? `<button onclick="globalThis.markInProgress('hand', ${index})" class="mobile-icon-btn text-blue-300" aria-label="Start Work">
+              ? `<button data-action="markInProgress" data-tab="hand" data-index="${index}" class="mobile-icon-btn text-blue-300" aria-label="Start Work">
               <i class="fa-solid fa-play"></i>
             </button>`
               : ""
       }
       ${
           showCompleteButton
-              ? `<button onclick="globalThis.markCompleted('hand', ${index})" class="mobile-icon-btn text-green-300" aria-label="Mark Completed">
+              ? `<button data-action="markCompleted" data-tab="hand" data-index="${index}" class="mobile-icon-btn text-green-300" aria-label="Mark Completed">
               <i class="fa-solid fa-check-circle"></i>
             </button>`
               : ""
       }
       ${
           part.assigned && part.assigned !== ""
-              ? `<button onclick="globalThis.unclaimPart(${index})" class="mobile-icon-btn text-orange-300" aria-label="Unclaim Part">
+              ? `<button data-action="unclaimPart" data-index="${index}" class="mobile-icon-btn text-orange-300" aria-label="Unclaim Part">
               <i class="fa-solid fa-user-slash"></i>
             </button>`
               : ""
       }
       ${
           showInfoButton
-              ? `<button onclick="globalThis.viewPartInfo('hand', ${index})" class="mobile-icon-btn text-gray-300" aria-label="Info">
+              ? `<button data-action="viewPartInfo" data-tab="hand" data-index="${index}" class="mobile-icon-btn text-gray-300" aria-label="Info">
         <i class="fa-solid fa-circle-info"></i>
       </button>`
               : ""
       }
       ${
           showPrintButton
-              ? `<button onclick="globalThis.viewHandDrawing(${index})" class="mobile-icon-btn text-purple-300" aria-label="View Drawing">
+              ? `<button data-action="viewHandDrawing" data-index="${index}" class="mobile-icon-btn text-purple-300" aria-label="View Drawing">
         <i class="fa-solid fa-print"></i>
       </button>`
               : ""
       }
       ${
           showEditButton
-              ? `<button onclick="globalThis.editPart('hand', ${index})" class="mobile-icon-btn text-blue-200" aria-label="Edit Part">
+              ? `<button data-action="editPart" data-tab="hand" data-index="${index}" class="mobile-icon-btn text-blue-200" aria-label="Edit Part">
         <i class="fa-solid fa-pen"></i>
       </button>`
               : ""
       }
-      <button onclick="globalThis.deletePart('hand', ${index})" class="mobile-icon-btn text-red-300" aria-label="Delete Part">
+      <button data-action="deletePart" data-tab="hand" data-index="${index}" class="mobile-icon-btn text-red-300" aria-label="Delete Part">
         <i class="fa-solid fa-trash"></i>
       </button>
     </div>

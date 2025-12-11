@@ -29,7 +29,7 @@
             <div class="flex items-center gap-2">
                 <button
                     id="drawing-refresh"
-                    onclick="globalThis.refreshDrawing()"
+                    data-action="refreshDrawing"
                     class="neumorphic-btn px-4 py-2 rounded-lg text-blue-200 hover:text-blue-100"
                 >
                     <i class="fa-solid fa-rotate-right mr-2"></i>Refresh from
@@ -37,14 +37,14 @@
                 </button>
                 <button
                     id="drawing-print"
-                    onclick="globalThis.printDrawing()"
+                    data-action="printDrawing"
                     class="neumorphic-btn px-4 py-2 rounded-lg text-purple-200 hover:text-purple-100"
                 >
                     <i class="fa-solid fa-print mr-2"></i>Print
                 </button>
                 <button
                     id="drawing-close"
-                    onclick="globalThis.closeDrawingModal()"
+                    data-action="closeDrawingModal"
                     class="text-gray-400 hover:text-red-400 p-2"
                 >
                     <i class="fa-solid fa-times text-xl"></i>

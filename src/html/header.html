@@ -16,7 +16,7 @@
     <div class="flex gap-4 items-center">
         <button
             id="settings-btn"
-            onclick="openSettingsModal()"
+            data-action="openSettingsModal"
             class="neumorphic-btn h-10 w-10 rounded-xl text-gray-400 hover:text-blue-400 flex items-center justify-center transition-colors"
             title="Settings"
         >
@@ -29,14 +29,15 @@
             <input
                 type="text"
                 id="global-search"
-                onkeyup="handleSearch(this.value)"
+                data-action="handleSearch"
                 placeholder="Search parts..."
                 class="neumorphic-input pl-10 pr-4 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-400 w-64 transition-all"
             />
         </div>
         <button
             id="add-part-btn"
-            onclick="openAddModal(true)"
+            data-action="openAddModal"
+            data-is-new="true"
             class="neumorphic-btn px-6 py-2 rounded-xl text-blue-400 font-semibold"
         >
             <i class="fa-solid fa-plus mr-2"></i> Add Part for Review

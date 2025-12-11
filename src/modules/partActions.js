@@ -22,6 +22,12 @@ import {
     updatePart as apiUpdatePart,
 } from "../utils/partsApi.js";
 import { openReviewDetails, showPartInfo } from "./infoModals.js";
+import {
+    openModal as openManagedModal,
+    closeModal as closeManagedModal,
+    setModalLoading,
+} from "../utils/modalManager.js";
+import { withErrorHandling } from "../utils/apiErrorHandler.js";
 
 let pendingStorageContext = null;
 let pendingAmountConfirmation = null;
@@ -75,7 +81,6 @@ function initStorageModal() {
 
 function openStorageModal(context) {
     initStorageModal();
-    const modal = document.getElementById("storage-modal");
     const input = document.getElementById("storage-location-input");
     const submitButton = document.getElementById("storage-submit");
     const cancelButton = document.getElementById("storage-cancel");
@@ -83,7 +88,7 @@ function openStorageModal(context) {
     const descriptionElement = document.getElementById(
         "storage-modal-description"
     );
-    if (!modal || !input || !submitButton || !cancelButton) {
+    if (!input || !submitButton || !cancelButton) {
         alert("Storage modal is unavailable. Please try again.");
         return;
     }
@@ -101,29 +106,24 @@ function openStorageModal(context) {
     input.disabled = false;
     submitButton.disabled = false;
     cancelButton.disabled = false;
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
-    hideActionIconKey();
+    openManagedModal("storage-modal", {
+        onOpen: hideActionIconKey,
+        focusSelector: config.readOnly ? null : "#storage-location-input",
+    });
     if (!config.readOnly) {
         input.focus();
     }
 }
 
 function closeStorageModal() {
-    const modal = document.getElementById("storage-modal");
-    if (modal) {
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
-        showActionIconKey();
-    }
+    closeManagedModal("storage-modal", {
+        onClose: showActionIconKey,
+    });
     pendingStorageContext = null;
 }
 
 function setStorageModalLoading(isLoading) {
-    const submitButton = document.getElementById("storage-submit");
-    const cancelButton = document.getElementById("storage-cancel");
-    if (submitButton) submitButton.disabled = isLoading;
-    if (cancelButton) cancelButton.disabled = isLoading;
+    setModalLoading("storage-modal", isLoading);
 }
 
 async function handleStorageSubmit(event) {
@@ -147,7 +147,9 @@ async function handleStorageSubmit(event) {
     }
     const rawLocation = input.value?.trim();
     const storageLocation =
-        rawLocation && rawLocation !== "" ? rawLocation : getStorageLocation(part);
+        rawLocation && rawLocation !== ""
+            ? rawLocation
+            : getStorageLocation(part);
     const mergedMisc = buildMiscWithStorage(part, storageLocation);
     const payload =
         Object.keys(mergedMisc).length > 0 ? { miscInfo: mergedMisc } : {};
@@ -155,35 +157,39 @@ async function handleStorageSubmit(event) {
         alert("Please provide the storage location before unclaiming.");
         return;
     }
-    try {
-        const shouldShowLoading = mode !== "claimInfo";
-        if (shouldShowLoading) setStorageModalLoading(true);
-        if (triggerButton && shouldShowLoading) triggerButton.disabled = true;
-        if (mode === "complete") {
-            const completedPart = await apiCompletePart(part.id, payload);
-            updatePartInState(part.id, completedPart);
-            if (fromTab === "cnc") renderCNC();
-            else renderHandFab();
-            renderCompleted();
-        } else if (mode === "unclaim") {
-            await apiUpdatePart(part.id, payload);
-            const unclaimedPart = await apiUnclaimPart(part.id);
-            updatePartInState(part.id, unclaimedPart);
-            renderHandFab();
-        } else if (mode === "claimInfo") {
-            if (typeof onContinue === "function") {
-                onContinue();
+    const shouldShowLoading = mode !== "claimInfo";
+    if (shouldShowLoading) setStorageModalLoading(true);
+    if (triggerButton && shouldShowLoading) triggerButton.disabled = true;
+    await withErrorHandling(
+        async () => {
+            if (mode === "complete") {
+                const completedPart = await apiCompletePart(part.id, payload);
+                updatePartInState(part.id, completedPart);
+                if (fromTab === "cnc") renderCNC();
+                else renderHandFab();
+                renderCompleted();
+            } else if (mode === "unclaim") {
+                await apiUpdatePart(part.id, payload);
+                const unclaimedPart = await apiUnclaimPart(part.id);
+                updatePartInState(part.id, unclaimedPart);
+                renderHandFab();
+            } else if (mode === "claimInfo") {
+                if (typeof onContinue === "function") {
+                    onContinue();
+                }
             }
+        },
+        {
+            onError: () =>
+                alert("Failed to save storage location. Please try again."),
+            onFinally: () => {
+                if (shouldShowLoading) setStorageModalLoading(false);
+                if (triggerButton && shouldShowLoading)
+                    triggerButton.disabled = false;
+                closeStorageModal();
+            },
         }
-    } catch (error) {
-        console.error("Failed to handle storage action:", error);
-        alert("Failed to save storage location. Please try again.");
-    } finally {
-        const shouldShowLoading = mode !== "claimInfo";
-        if (shouldShowLoading) setStorageModalLoading(false);
-        if (triggerButton && shouldShowLoading) triggerButton.disabled = false;
-        closeStorageModal();
-    }
+    );
 }
 
 /**
@@ -210,26 +216,20 @@ export async function markCompleted(fromTab, index, event) {
 export async function markUncompleted(index, event) {
     const part = appState.parts.completed[index];
 
-    try {
-        // Disable the button during API call
-        const button = event?.target;
-        if (button) button.disabled = true;
-
-        const updatedPart = await apiRevertPart(part.id);
-        updatePartInState(part.id, updatedPart);
-
-        // Re-render affected tabs
-        renderCompleted();
-        renderCNC();
-        renderHandFab();
-    } catch (error) {
-        console.error("Failed to revert part:", error);
-        alert("Failed to revert part. Please try again.");
-    } finally {
-        // Re-enable button
-        const button = event?.target;
-        if (button) button.disabled = false;
-    }
+    const button = event?.target;
+    await withErrorHandling(
+        async () => {
+            const updatedPart = await apiRevertPart(part.id);
+            updatePartInState(part.id, updatedPart);
+            renderCompleted();
+            renderCNC();
+            renderHandFab();
+        },
+        {
+            loadingTargets: button,
+            onError: () => alert("Failed to revert part. Please try again."),
+        }
+    );
 }
 
 /**
@@ -296,27 +296,22 @@ export async function deletePart(tab, index, event) {
     const part = appState.parts[tab][index];
 
     if (confirm("Delete this part?")) {
-        try {
-            // Disable the button during API call
-            const button = event?.target;
-            if (button) button.disabled = true;
-
-            await apiDeletePart(part.id);
-            removePartFromState(part.id);
-
-            // Re-render all tabs since deletion affects global state
-            renderReview();
-            renderCNC();
-            renderHandFab();
-            renderCompleted();
-        } catch (error) {
-            console.error("Failed to delete part:", error);
-            alert("Failed to delete part. Please try again.");
-        } finally {
-            // Re-enable button
-            const button = event?.target;
-            if (button) button.disabled = false;
-        }
+        const button = event?.target;
+        await withErrorHandling(
+            async () => {
+                await apiDeletePart(part.id);
+                removePartFromState(part.id);
+                renderReview();
+                renderCNC();
+                renderHandFab();
+                renderCompleted();
+            },
+            {
+                loadingTargets: button,
+                onError: () =>
+                    alert("Failed to delete part. Please try again."),
+            }
+        );
     }
 }
 
@@ -343,26 +338,21 @@ export async function markInProgress(tab, index, event) {
     }
 
     // For CNC parts or already assigned hand parts, just update status
-    try {
-        // Disable the button during API call
-        const button = event?.target;
-        if (button) button.disabled = true;
-
-        // For CNC parts, we need to update the part status via API
-        const updateData = { status: "In Progress" };
-        const updatedPart = await apiUpdatePart(part.id, updateData);
-        updatePartInState(part.id, updatedPart);
-
-        if (tab === "cnc") renderCNC();
-        else renderHandFab();
-    } catch (error) {
-        console.error("Failed to update part status:", error);
-        alert("Failed to update part status. Please try again.");
-    } finally {
-        // Re-enable button
-        const button = event?.target;
-        if (button) button.disabled = false;
-    }
+    const button = event?.target;
+    await withErrorHandling(
+        async () => {
+            const updateData = { status: "In Progress" };
+            const updatedPart = await apiUpdatePart(part.id, updateData);
+            updatePartInState(part.id, updatedPart);
+            if (tab === "cnc") renderCNC();
+            else renderHandFab();
+        },
+        {
+            loadingTargets: button,
+            onError: () =>
+                alert("Failed to update part status. Please try again."),
+        }
+    );
 }
 
 // Assignment Modal Management
@@ -389,9 +379,10 @@ function openAssignModal(part, index, options = {}) {
         }
     }
     if (modal) {
-        modal.classList.remove("hidden");
-        modal.classList.add("flex");
-        hideActionIconKey();
+        openManagedModal("assign-modal", {
+            onOpen: hideActionIconKey,
+            focusSelector: "#assign-input",
+        });
     }
     if (assignInput) {
         setTimeout(() => assignInput.focus(), 100);
@@ -407,11 +398,9 @@ export function closeAssignModal() {
 
 function closeAssignModalInternal(skipShowActionIcon) {
     const modal = document.getElementById("assign-modal");
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
-    if (!skipShowActionIcon) {
-        showActionIconKey();
-    }
+    closeManagedModal("assign-modal", {
+        onClose: skipShowActionIcon ? undefined : showActionIconKey,
+    });
     pendingAssignmentIndex = null;
     pendingAssignShowStorageLocation = false;
     pendingAssignStorageLocation = "";
@@ -425,28 +414,30 @@ export async function confirmAssignment() {
     if (name && name.trim() !== "") {
         const part = appState.parts.hand[pendingAssignmentIndex];
 
-        try {
-            const updatedPart = await apiAssignPart(part.id, name.trim());
-            updatePartInState(part.id, updatedPart);
-
-            renderHandFab();
-            const shouldShowStorage =
-                pendingAssignShowStorageLocation &&
-                Boolean(pendingAssignStorageLocation);
-            closeAssignModalInternal(shouldShowStorage);
-            if (shouldShowStorage) {
-                openStorageModal({
-                    mode: "claimInfo",
-                    part: updatedPart,
-                    fromTab: "hand",
-                    index: pendingAssignmentIndex,
-                    initialValue: pendingAssignStorageLocation,
-                });
+        await withErrorHandling(
+            async () => {
+                const updatedPart = await apiAssignPart(part.id, name.trim());
+                updatePartInState(part.id, updatedPart);
+                renderHandFab();
+                const shouldShowStorage =
+                    pendingAssignShowStorageLocation &&
+                    Boolean(pendingAssignStorageLocation);
+                closeAssignModalInternal(shouldShowStorage);
+                if (shouldShowStorage) {
+                    openStorageModal({
+                        mode: "claimInfo",
+                        part: updatedPart,
+                        fromTab: "hand",
+                        index: pendingAssignmentIndex,
+                        initialValue: pendingAssignStorageLocation,
+                    });
+                }
+            },
+            {
+                onError: () =>
+                    alert("Failed to assign part. Please try again."),
             }
-        } catch (error) {
-            console.error("Failed to assign part:", error);
-            alert("Failed to assign part. Please try again.");
-        }
+        );
     }
 }
 
@@ -456,10 +447,9 @@ export async function confirmAssignment() {
  */
 export function unclaimPart(index) {
     pendingUnclaimIndex = index;
-    const modal = document.getElementById("unclaim-modal");
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
-    hideActionIconKey();
+    openManagedModal("unclaim-modal", {
+        onOpen: hideActionIconKey,
+    });
 }
 
 export function viewPartInfo(tab, index) {
@@ -474,9 +464,9 @@ export function viewPartInfo(tab, index) {
  */
 export function closeUnclaimModal() {
     const modal = document.getElementById("unclaim-modal");
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
-    showActionIconKey();
+    closeManagedModal("unclaim-modal", {
+        onClose: showActionIconKey,
+    });
     pendingUnclaimIndex = null;
 }
 
@@ -517,20 +507,17 @@ function openCompleteAmountModal(context) {
         return;
     }
     message.innerText = `This part requires ${context.part.amount}. Have you completed all units?`;
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
-    hideActionIconKey();
+    openManagedModal("complete-amount-modal", {
+        onOpen: hideActionIconKey,
+    });
     confirmButton.disabled = false;
     cancelButton.disabled = false;
 }
 
 export function closeCompleteAmountModal() {
-    const modal = document.getElementById("complete-amount-modal");
-    if (modal) {
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
-        showActionIconKey();
-    }
+    closeManagedModal("complete-amount-modal", {
+        onClose: showActionIconKey,
+    });
     pendingAmountConfirmation = null;
 }
 

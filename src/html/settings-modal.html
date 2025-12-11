@@ -5,7 +5,7 @@
 >
     <div class="neumorphic-card p-8 w-full max-w-sm relative animate-fade-in">
         <button
-            onclick="closeSettingsModal()"
+            data-action="closeSettingsModal"
             class="absolute top-4 right-4 text-gray-400 hover:text-red-400"
         >
             <i class="fa-solid fa-times text-xl"></i>
@@ -23,7 +23,8 @@
                 <input
                     type="checkbox"
                     id="check-review"
-                    onchange="toggleTabVisibility('review')"
+                    data-action="toggleTabVisibility"
+                    data-tab="review"
                     checked
                     class="accent-blue-400 w-5 h-5"
                 />
@@ -36,7 +37,8 @@
                 <input
                     type="checkbox"
                     id="check-cnc"
-                    onchange="toggleTabVisibility('cnc')"
+                    data-action="toggleTabVisibility"
+                    data-tab="cnc"
                     checked
                     class="accent-blue-400 w-5 h-5"
                 />
@@ -49,7 +51,8 @@
                 <input
                     type="checkbox"
                     id="check-hand"
-                    onchange="toggleTabVisibility('hand')"
+                    data-action="toggleTabVisibility"
+                    data-tab="hand"
                     checked
                     class="accent-blue-400 w-5 h-5"
                 />
@@ -62,7 +65,8 @@
                 <input
                     type="checkbox"
                     id="check-completed"
-                    onchange="toggleTabVisibility('completed')"
+                    data-action="toggleTabVisibility"
+                    data-tab="completed"
                     checked
                     class="accent-blue-400 w-5 h-5"
                 />

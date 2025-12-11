@@ -7,6 +7,11 @@ import { renderCNC } from "./cnc.js";
 import { renderHandFab } from "./handFab.js";
 import { renderCompleted } from "./completed.js";
 import { loadCurrentTab, loadTabVisibility } from "./persistence.js";
+import {
+    initReactiveState,
+    setState,
+    getState,
+} from "../utils/reactiveState.js";
 
 /** @typedef {{id?: number, type?: string, name?: string, subsystem?: string, assigned?: string, status: string, notes?: string, file?: string, onshapeUrl?: string, claimedDate?: string, category?: string, createdAt?: string, updatedAt?: string, amount?: number}} Part */
 
@@ -52,6 +57,8 @@ export const appState = {
     isMobile: false,
 };
 
+initReactiveState(appState);
+
 /**
  * Load persisted state from localStorage
  */
@@ -59,22 +66,22 @@ function loadPersistedState() {
     // Load current tab
     const savedTab = loadCurrentTab();
     if (savedTab && ["review", "cnc", "hand", "completed"].includes(savedTab)) {
-        appState.currentTab = savedTab;
+        setState("currentTab", savedTab);
     }
     if (
-        appState.isMobile &&
-        !["hand", "completed"].includes(appState.currentTab)
+        getState("isMobile") &&
+        !["hand", "completed"].includes(getState("currentTab"))
     ) {
-        appState.currentTab = "hand";
+        setState("currentTab", "hand");
     }
 
     // Load tab visibility settings
     const savedVisibility = loadTabVisibility();
     if (savedVisibility && typeof savedVisibility === "object") {
-        appState.tabVisibility = {
-            ...appState.tabVisibility,
+        setState("tabVisibility", {
+            ...getState("tabVisibility"),
             ...savedVisibility,
-        };
+        });
     }
 }
 
@@ -96,15 +103,15 @@ export function detectMobileDevice() {
     const isMobile = Boolean(
         (hasTouch && (uaMobile || isUaDataMobile)) || smallViewport
     );
-    appState.isMobile = isMobile;
-    if (isMobile && !["hand", "completed"].includes(appState.currentTab)) {
-        appState.currentTab = "hand";
+    setState("isMobile", isMobile);
+    if (isMobile && !["hand", "completed"].includes(getState("currentTab"))) {
+        setState("currentTab", "hand");
     }
     if (
         !isMobile &&
-        !["review", "cnc", "hand", "completed"].includes(appState.currentTab)
+        !["review", "cnc", "hand", "completed"].includes(getState("currentTab"))
     ) {
-        appState.currentTab = "review";
+        setState("currentTab", "review");
     }
     return isMobile;
 }
@@ -141,7 +148,7 @@ export async function initializeState() {
         // Load persisted state first
         loadPersistedState();
 
-        appState.isLoading = true;
+        setState("isLoading", true);
 
         // Load all parts
         await loadAllParts();
@@ -155,7 +162,7 @@ export async function initializeState() {
             "Failed to load data from server. Please check your connection and try again."
         );
     } finally {
-        appState.isLoading = false;
+        setState("isLoading", false);
         // Re-render the current tab to show loaded data
         await reRenderCurrentTab();
     }
@@ -169,19 +176,21 @@ export async function loadAllParts() {
         const response = await getParts();
         const allParts = (response.parts || []).map(normalizePart);
 
-        // Clear existing parts
-        appState.parts.review = [];
-        appState.parts.cnc = [];
-        appState.parts.hand = [];
-        appState.parts.completed = [];
+        const nextParts = {
+            review: [],
+            cnc: [],
+            hand: [],
+            completed: [],
+        };
 
-        // Organize parts by category
-        for (const part of allParts) {
-            const category = part.category || "review"; // Default to review if no category
-            if (appState.parts[category]) {
-                appState.parts[category].push(part);
+        allParts.forEach((part) => {
+            const category = part.category || "review";
+            if (nextParts[category]) {
+                nextParts[category].push(part);
             }
-        }
+        });
+
+        setState("parts", nextParts);
     } catch (error) {
         console.error("Failed to load parts:", error);
         throw error;
@@ -194,16 +203,19 @@ export async function loadAllParts() {
  */
 export async function loadPartsForCategory(category) {
     try {
-        appState.loadingTab = category;
+        setState("loadingTab", category);
         const response = await getParts({ category });
-        appState.parts[category] = (response.parts || []).map(normalizePart);
+        setState(
+            `parts.${category}`,
+            (response.parts || []).map(normalizePart)
+        );
     } catch (error) {
         console.error(`Failed to load ${category} parts:`, error);
         throw error;
     } finally {
-        appState.loadingTab = null;
+        setState("loadingTab", null);
         // Re-render the current tab if it matches the loaded category
-        if (appState.currentTab === category) {
+        if (getState("currentTab") === category) {
             await reRenderCurrentTab();
         }
     }
@@ -214,11 +226,12 @@ export async function loadPartsForCategory(category) {
  */
 export async function loadStats() {
     try {
-        appState.stats = await getStats();
+        const stats = await getStats();
+        setState("stats", stats);
     } catch (error) {
         console.error("Failed to load stats:", error);
         // Don't throw here - stats are not critical
-        appState.stats = null;
+        setState("stats", null);
     }
 }
 
@@ -227,13 +240,13 @@ export async function loadStats() {
  */
 export async function refreshData() {
     try {
-        appState.isLoading = true;
+        setState("isLoading", true);
         await Promise.all([loadAllParts(), loadStats()]);
     } catch (error) {
         console.error("Failed to refresh data:", error);
         throw error;
     } finally {
-        appState.isLoading = false;
+        setState("isLoading", false);
         // Re-render the current tab to show refreshed data
         await reRenderCurrentTab();
     }
@@ -244,7 +257,7 @@ export async function refreshData() {
  * @param {string} tab - The tab to switch to
  */
 export function setCurrentTab(tab) {
-    appState.currentTab = tab;
+    setState("currentTab", tab);
 }
 
 /**
@@ -252,14 +265,14 @@ export function setCurrentTab(tab) {
  * @param {string} query - The search query
  */
 export function setSearchQuery(query) {
-    appState.searchQuery = query;
+    setState("searchQuery", query);
 }
 
 /**
  * Toggle sort direction
  */
 export function toggleSortDirection() {
-    appState.sortDirection = appState.sortDirection === 1 ? -1 : 1;
+    setState("sortDirection", getState("sortDirection") === 1 ? -1 : 1);
 }
 
 /**
@@ -267,16 +280,16 @@ export function toggleSortDirection() {
  * @param {string} apiKey - The API key to store
  */
 export function setApiKey(apiKey) {
-    appState.apiKey = apiKey;
-    appState.isAuthenticated = true;
+    setState("apiKey", apiKey);
+    setState("isAuthenticated", true);
 }
 
 /**
  * Clear the API key and mark as unauthenticated
  */
 export function clearApiKey() {
-    appState.apiKey = null;
-    appState.isAuthenticated = false;
+    setState("apiKey", null);
+    setState("isAuthenticated", false);
 }
 
 /**
@@ -302,9 +315,9 @@ export function getPartsByCategory(category) {
  * @param {Part} part - The part to add
  */
 export function addPartToCategory(category, part) {
-    if (appState.parts[category]) {
-        appState.parts[category].push(part);
-    }
+    const partsForCategory = appState.parts[category];
+    if (!partsForCategory) return;
+    setState(`parts.${category}`, [...partsForCategory, part]);
 }
 
 /**
@@ -313,9 +326,11 @@ export function addPartToCategory(category, part) {
  * @param {number} index - The index of the part to remove
  */
 export function removePartFromCategory(category, index) {
-    if (appState.parts[category]?.[index]) {
-        appState.parts[category].splice(index, 1);
-    }
+    const partsForCategory = appState.parts[category];
+    if (!partsForCategory?.[index]) return;
+    const nextCategory = [...partsForCategory];
+    nextCategory.splice(index, 1);
+    setState(`parts.${category}`, nextCategory);
 }
 
 /**
@@ -325,28 +340,34 @@ export function removePartFromCategory(category, index) {
  */
 export function updatePartInState(partId, updatedPart) {
     // Find and update the part in all categories
+    const nextParts = { ...appState.parts };
     for (const category of ["review", "cnc", "hand", "completed"]) {
-        const parts = appState.parts[category];
+        const parts = nextParts[category];
         const index = parts.findIndex((part) => part.id === partId);
         if (index !== -1) {
             // If category changed, move to new category
             if (updatedPart.category === category) {
-                // Update in place
-                parts[index] = normalizePart({
+                const updatedList = [...parts];
+                updatedList[index] = normalizePart({
                     ...parts[index],
                     ...updatedPart,
                 });
+                nextParts[category] = updatedList;
             } else {
-                parts.splice(index, 1); // Remove from current category
-                if (appState.parts[updatedPart.category]) {
-                    appState.parts[updatedPart.category].push(
-                        normalizePart(updatedPart)
-                    );
+                const updatedList = [...parts];
+                updatedList.splice(index, 1);
+                nextParts[category] = updatedList;
+                if (nextParts[updatedPart.category]) {
+                    nextParts[updatedPart.category] = [
+                        ...nextParts[updatedPart.category],
+                        normalizePart(updatedPart),
+                    ];
                 }
             }
             break;
         }
     }
+    setState("parts", nextParts);
 }
 
 /**
@@ -356,7 +377,10 @@ export function updatePartInState(partId, updatedPart) {
 export function addPartToState(part) {
     const category = part.category || "review";
     if (appState.parts[category]) {
-        appState.parts[category].push(normalizePart(part));
+        setState(`parts.${category}`, [
+            ...appState.parts[category],
+            normalizePart(part),
+        ]);
     }
 }
 
@@ -365,14 +389,18 @@ export function addPartToState(part) {
  * @param {number} partId - Part ID to remove
  */
 export function removePartFromState(partId) {
+    const nextParts = { ...appState.parts };
     for (const category of ["review", "cnc", "hand", "completed"]) {
-        const parts = appState.parts[category];
+        const parts = nextParts[category];
         const index = parts.findIndex((part) => part.id === partId);
         if (index !== -1) {
-            parts.splice(index, 1);
+            const updatedList = [...parts];
+            updatedList.splice(index, 1);
+            nextParts[category] = updatedList;
             break;
         }
     }
+    setState("parts", nextParts);
 }
 
 function normalizePart(part) {

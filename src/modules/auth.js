@@ -123,10 +123,13 @@ function resetAuthForm() {
 
 /**
  * Handle authentication form submission
- * @param {Event} event - Form submit event
+ * @param {Event} event - Button click event from event delegation
  */
 export async function handleAuthSubmit(event) {
-    event.preventDefault();
+    // Prevent default if this was called from a form submit somehow
+    if (event && event.preventDefault) {
+        event.preventDefault();
+    }
 
     const apiKeyInput = document.getElementById("auth-api-key");
     if (!apiKeyInput) return;

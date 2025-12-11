@@ -112,16 +112,16 @@ function buildActionButtons(part, index, showInfoEditButtons) {
         part.status === "In Progress" || part.status === "Already Started";
     const reviewed = part.status === "Reviewed";
     const downloadButton = part.file
-        ? `<button onclick="globalThis.downloadStepFile(${part.id}, '${part.file}')" class="neumorphic-btn px-2 py-1 text-purple-400 hover:text-purple-300" title="Download File"><i class="fa-solid fa-download"></i> Download</button>`
+        ? `<button data-action="downloadStepFile" data-part-id="${part.id}" data-filename="${part.file}" class="neumorphic-btn px-2 py-1 text-purple-400 hover:text-purple-300" title="Download File"><i class="fa-solid fa-download"></i> Download</button>`
         : "";
     const infoButtons = showInfoEditButtons
-        ? `<button onclick="globalThis.viewPartInfo('cnc', ${index})" class="text-gray-400 hover:text-blue-300 transition" aria-label="Part info"><i class="fa-solid fa-circle-info"></i></button>
-       <button onclick="globalThis.editPart('cnc', ${index})" class="text-gray-400 hover:text-blue-400 transition" aria-label="Edit part"><i class="fa-solid fa-pen"></i></button>`
+        ? `<button data-action="viewPartInfo" data-tab="cnc" data-index="${index}" class="text-gray-400 hover:text-blue-300 transition" aria-label="Part info"><i class="fa-solid fa-circle-info"></i></button>
+       <button data-action="editPart" data-tab="cnc" data-index="${index}" class="text-gray-400 hover:text-blue-400 transition" aria-label="Edit part"><i class="fa-solid fa-pen"></i></button>`
         : "";
     const statusButton = inProgress
-        ? `<button onclick="globalThis.markCompleted('cnc', ${index})" class="neumorphic-btn px-2 py-1 text-green-400 hover:text-green-300 mr-auto" title="Mark Completed"><i class="fa-solid fa-check-circle"></i> Done</button>`
+        ? `<button data-action="markCompleted" data-tab="cnc" data-index="${index}" class="neumorphic-btn px-2 py-1 text-green-400 hover:text-green-300 mr-auto" title="Mark Completed"><i class="fa-solid fa-check-circle"></i> Done</button>`
         : reviewed
-        ? `<button onclick="globalThis.markInProgress('cnc', ${index})" class="neumorphic-btn px-2 py-1 text-blue-400 hover:text-blue-300 mr-auto" title="Mark In Progress"><i class="fa-solid fa-play"></i> Start</button>`
+        ? `<button data-action="markInProgress" data-tab="cnc" data-index="${index}" class="neumorphic-btn px-2 py-1 text-blue-400 hover:text-blue-300 mr-auto" title="Mark In Progress"><i class="fa-solid fa-play"></i> Start</button>`
         : "";
 
     return `
@@ -129,7 +129,7 @@ function buildActionButtons(part, index, showInfoEditButtons) {
       ${statusButton}
       ${downloadButton}
       ${infoButtons}
-      <button onclick="globalThis.deletePart('cnc', ${index})" class="text-gray-400 hover:text-red-400 transition" aria-label="Delete part"><i class="fa-solid fa-trash"></i></button>
+      <button data-action="deletePart" data-tab="cnc" data-index="${index}" class="text-gray-400 hover:text-red-400 transition" aria-label="Delete part"><i class="fa-solid fa-trash"></i></button>
     </div>
   `;
 }

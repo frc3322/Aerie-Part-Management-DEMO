@@ -1,12 +1,18 @@
 // Tab Management Module
 // Handles tab switching and navigation
 
-import { appState, loadAllParts, loadPartsForCategory } from "./state.js";
+import {
+    appState,
+    loadAllParts,
+    loadPartsForCategory,
+    setSearchQuery,
+} from "./state.js";
 import { renderReview } from "./review.js";
 import { renderCNC } from "./cnc.js";
 import { renderHandFab } from "./handFab.js";
 import { renderCompleted } from "./completed.js";
 import { saveCurrentTab } from "./persistence.js";
+import { getState, subscribe, setState } from "../utils/reactiveState.js";
 
 // Debounce timer for search
 let searchDebounceTimer = null;
@@ -128,7 +134,7 @@ export async function switchTab(tab) {
     if (!allowedTabs.includes(targetTab)) {
         targetTab = allowedTabs[0];
     }
-    appState.currentTab = targetTab;
+    setState("currentTab", targetTab);
 
     // Save current tab to localStorage
     saveCurrentTab(targetTab);
@@ -154,27 +160,37 @@ export async function switchTab(tab) {
     }
     updateMobileNavActive(targetTab);
 
-    // Fetch fresh data from server
-    try {
-        if (targetTab === "review") {
-            // Load all parts for review tab to ensure proper categorization
-            await loadAllParts();
-        } else {
-            // Load fresh data for specific category
-            await loadPartsForCategory(targetTab);
+    // Fetch fresh data from server (only if authenticated)
+    if (appState.isAuthenticated) {
+        try {
+            if (targetTab === "review") {
+                // Load all parts for review tab to ensure proper categorization
+                await loadAllParts();
+            } else {
+                // Load fresh data for specific category
+                await loadPartsForCategory(targetTab);
+            }
+        } catch (error) {
+            console.error(`Failed to load ${targetTab} data:`, error);
+            // Still render with current data if fetch fails
         }
-    } catch (error) {
-        console.error(`Failed to load ${targetTab} data:`, error);
-        // Still render with current data if fetch fails
     }
 }
 
 /**
  * Handle search functionality with debouncing
- * @param {string} query - The search query
+ * @param {Event|string} eventOrQuery - Keyup event or search query string
  */
-export function handleSearch(query) {
-    appState.searchQuery = query;
+export function handleSearch(eventOrQuery) {
+    let query;
+    if (typeof eventOrQuery === "string") {
+        query = eventOrQuery;
+    } else if (eventOrQuery && eventOrQuery.target) {
+        query = eventOrQuery.target.value;
+    } else {
+        return;
+    }
+    setSearchQuery(query);
 
     // Clear existing timer
     if (searchDebounceTimer) {
@@ -205,7 +221,7 @@ export function handleSearch(query) {
  * @returns {string} The current tab name
  */
 export function getCurrentTab() {
-    return appState.currentTab;
+    return getState("currentTab");
 }
 
 function getSortValue(part, key) {
@@ -289,3 +305,27 @@ export async function sortTable(category, key) {
     updateSortIndicators(category, key, direction);
     renderSortedCategory(category);
 }
+
+subscribe("currentTab", (tab) => {
+    updateMobileNavActive(tab);
+});
+
+subscribe("isMobile", () => {
+    configureMobileUI();
+});
+
+subscribe("parts.review", () => {
+    renderReview();
+});
+
+subscribe("parts.cnc", () => {
+    renderCNC();
+});
+
+subscribe("parts.hand", () => {
+    renderHandFab();
+});
+
+subscribe("parts.completed", () => {
+    renderCompleted();
+});

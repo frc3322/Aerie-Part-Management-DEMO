@@ -7,7 +7,7 @@
         class="neumorphic-card p-8 w-full max-w-lg relative animate-fade-in max-h-[90vh] overflow-y-auto"
     >
         <button
-            onclick="closeModal()"
+            data-action="closeModal"
             class="absolute top-4 right-4 text-gray-400 hover:text-red-400"
         >
             <i class="fa-solid fa-times text-xl"></i>
@@ -17,7 +17,7 @@
             Add New Part
         </h2>
 
-        <form id="part-form" onsubmit="handleFormSubmit(event)">
+        <form id="part-form" data-action="handleFormSubmit">
             <input type="hidden" id="edit-mode" value="false" />
             <input type="hidden" id="edit-index" value="" />
             <input type="hidden" id="edit-origin-tab" value="" />
@@ -28,7 +28,7 @@
                 >
                 <select
                     id="input-category"
-                    onchange="handleCategoryChange(this.value)"
+                    data-action="handleCategoryChange"
                     class="neumorphic-input w-full p-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400"
                 >
                     <option value="cnc">cnc/laser</option>
@@ -86,7 +86,7 @@
                 >
                 <select
                     id="input-material-select"
-                    onchange="handleMaterialChange(this.value)"
+                    data-action="handleMaterialChange"
                     class="neumorphic-input w-full p-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400"
                 >
                     <option value="Polycarb">Polycarb</option>
@@ -177,7 +177,7 @@
                             id="input-file"
                             class="hidden"
                             accept=".step,.stp,.pdf"
-                            onchange="updateFileName()"
+                            data-action="updateFileName"
                         />
                     </label>
                     <span
@@ -212,7 +212,7 @@
             <div class="flex justify-end gap-4">
                 <button
                     type="button"
-                    onclick="closeModal()"
+                    data-action="closeModal"
                     class="text-gray-400 hover:text-white px-4 py-2"
                 >
                     Cancel
