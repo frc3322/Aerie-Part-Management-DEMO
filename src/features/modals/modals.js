@@ -1,10 +1,11 @@
 // Modal Management Module
 // Handles all modal dialogs and UI interactions
 
-import { appState, toggleDisable3JSPreview } from "../state/state.js";
+import { appState, setDisable3JSPreview } from "../state/state.js";
 import { saveTabVisibility } from "../state/persistence.js";
 import { hideActionIconKey, showActionIconKey } from "../auth/auth.js";
 import { getCurrentTab, switchTab } from "../navigation/tabs.js";
+import { getState } from "../../core/state/reactiveState.js";
 import {
     openModal as openManagedModal,
     closeModal as closeManagedModal,
@@ -19,7 +20,7 @@ export function openSettingsModal() {
     // Initialize checkbox states
     const disable3JSCheckbox = document.getElementById("check-disable-3js");
     if (disable3JSCheckbox) {
-        disable3JSCheckbox.checked = appState.disable3JSPreview;
+        disable3JSCheckbox.checked = Boolean(getState("disable3JSPreview"));
     }
 
     openManagedModal("settings-modal", {
@@ -83,7 +84,17 @@ export function toggleDisable3JS() {
     const checkbox = document.getElementById("check-disable-3js");
     if (!checkbox) return;
 
-    toggleDisable3JSPreview();
+    // Read the checkbox's actual checked state and set it directly
+    const newValue = checkbox.checked;
+    setDisable3JSPreview(newValue);
+
+    // Immediately refresh the CNC tab to update existing previews
+    const currentTab = getCurrentTab();
+    if (currentTab === "cnc") {
+        import("../tabs/cnc.js").then(({ renderCNC }) => {
+            renderCNC();
+        });
+    }
 }
 
 /**

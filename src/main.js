@@ -251,19 +251,24 @@ globalThis.addEventListener("authenticated", () => {
 
 globalThis.addEventListener("resize", () => {
     const wasMobile = appState.isMobile;
+    const oldTab = appState.currentTab;
     detectMobileDevice();
     const modeChanged = wasMobile !== appState.isMobile;
     applyTabVisibilitySettings();
     configureMobileUI();
+
+    let tabChanged = false;
     if (
         modeChanged &&
         !appState.isMobile &&
         !["review", "cnc", "hand", "completed"].includes(appState.currentTab)
     ) {
         appState.currentTab = "review";
+        tabChanged = true;
     }
-    // Only switch tabs and load data if authenticated
-    if (appState.isAuthenticated) {
+
+    // Only switch tabs and load data if authenticated and tab actually changed
+    if (appState.isAuthenticated && tabChanged) {
         switchTab(appState.currentTab);
     }
 });

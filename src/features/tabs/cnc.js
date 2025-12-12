@@ -69,8 +69,18 @@ function buildHeaderSection(part, statusClass) {
   `;
 }
 
-function buildModelPlaceholder(fileExt) {
+function buildModelPlaceholder(fileExt, is3JSPreviewDisabled) {
     if (fileExt === "step" || fileExt === "stp") {
+        if (is3JSPreviewDisabled) {
+            return `
+      <div class="absolute inset-0 flex items-center justify-center text-center text-gray-400">
+        <div>
+          <i class="fa-solid fa-cube text-3xl mb-2"></i>
+          <p class="text-xs">3D Preview Disabled</p>
+        </div>
+      </div>
+    `;
+        }
         return `
       <div class="absolute inset-0 flex items-center justify-center">
         <div class="text-center">
@@ -151,7 +161,8 @@ function renderPartCard(part, index, container) {
     const fileExt = getFileExtension(part.file);
 
     const header = buildHeaderSection(part, statusClass);
-    const modelPlaceholder = buildModelPlaceholder(fileExt);
+    const is3JSPreviewDisabled = getState("disable3JSPreview");
+    const modelPlaceholder = buildModelPlaceholder(fileExt, is3JSPreviewDisabled);
     const notesSection = buildNotesSection(part);
     const actions = buildActionButtons(part, index, showInfoEditButtons);
 
@@ -194,7 +205,7 @@ function loadPartModel(part, index) {
             }
 
             // Check if 3JS previews are disabled
-            if (is3JSPreviewDisabled && fileExt === "step" || fileExt === "stp") {
+            if (is3JSPreviewDisabled && (fileExt === "step" || fileExt === "stp")) {
                 const container = document.getElementById(containerId);
                 if (container) {
                     container.innerHTML = `
@@ -245,6 +256,7 @@ export function renderCNC() {
 
     const prioritized = prioritizeParts(appState.parts.cnc);
     const filtered = filterParts(prioritized, appState.searchQuery);
+    const is3JSPreviewDisabled = getState("disable3JSPreview");
 
     if (filtered.length === 0) {
         renderEmptyState(container);
@@ -254,7 +266,12 @@ export function renderCNC() {
     for (const part of filtered) {
         const index = appState.parts.cnc.indexOf(part);
         renderPartCard(part, index, container);
-        loadPartModel(part, index);
+        const fileExt = getFileExtension(part.file);
+        const shouldSkip3DPreview =
+            is3JSPreviewDisabled && (fileExt === "step" || fileExt === "stp");
+        if (!shouldSkip3DPreview) {
+            loadPartModel(part, index);
+        }
     }
 }
 

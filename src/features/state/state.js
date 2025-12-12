@@ -6,7 +6,7 @@ import { renderReview } from "../tabs/review.js";
 import { renderCNC } from "../tabs/cnc.js";
 import { renderHandFab } from "../tabs/handFab.js";
 import { renderCompleted } from "../tabs/completed.js";
-import { loadCurrentTab, loadTabVisibility, loadDisable3JSPreview } from "./persistence.js";
+import { loadCurrentTab, loadTabVisibility, loadDisable3JSPreview, saveDisable3JSPreview } from "./persistence.js";
 import {
     initReactiveState,
     setState,
@@ -283,11 +283,17 @@ export function toggleDisable3JSPreview() {
     const currentValue = getState("disable3JSPreview");
     const newValue = !currentValue;
     setState("disable3JSPreview", newValue);
+    saveDisable3JSPreview(newValue);
+}
 
-    // Import here to avoid circular dependency
-    import("./persistence.js").then(({ saveDisable3JSPreview }) => {
-        saveDisable3JSPreview(newValue);
-    });
+/**
+ * Set the disable 3JS preview setting directly
+ * @param {boolean} disabled - Whether 3JS previews should be disabled
+ */
+export function setDisable3JSPreview(disabled) {
+    const value = Boolean(disabled);
+    setState("disable3JSPreview", value);
+    saveDisable3JSPreview(value);
 }
 
 /**
