@@ -350,3 +350,14 @@ body {
     font-size: 12px;
     font-weight: bold;
 }
+
+/* Confetti Animation Styles */
+.confetti-piece {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+    will-change: transform, opacity;
+    left: 0;
+    top: 0;
+}

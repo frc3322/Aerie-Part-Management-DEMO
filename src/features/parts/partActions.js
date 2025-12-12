@@ -32,6 +32,7 @@ import {
     setModalLoading,
 } from "../../core/dom/modalManager.js";
 import { withErrorHandling } from "../../core/api/apiErrorHandler.js";
+import { celebrateCompletion } from "../../utils/confetti.js";
 
 let pendingStorageContext = null;
 let pendingAmountConfirmation = null;
@@ -172,6 +173,9 @@ async function handleStorageSubmit(event) {
                 if (fromTab === "cnc") renderCNC();
                 else renderHandFab();
                 renderCompleted();
+
+                // 🎉 Celebrate the completion!
+                celebrateCompletion();
             } else if (mode === "unclaim") {
                 await apiUpdatePart(part.id, payload);
                 const unclaimedPart = await apiUnclaimPart(part.id);
