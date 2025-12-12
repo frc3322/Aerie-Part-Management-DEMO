@@ -68,7 +68,10 @@ import {
     confirmCompleteAmount,
     viewPartInfo,
 } from "./features/parts/partActions.js";
-import { handleFormSubmit, handleFormKeyup } from "./features/forms/formHandler.js";
+import {
+    handleFormSubmit,
+    handleFormKeyup,
+} from "./features/forms/formHandler.js";
 import {
     initializeAuthModal,
     showAuthModal,
@@ -108,7 +111,7 @@ function applyTooltip(element) {
  * Apply persisted tab visibility settings to the UI
  */
 function applyTabVisibilitySettings() {
-    const tabs = ["review", "cnc", "hand", "completed"];
+    const tabs = ["review", "cnc", "hand", "completed", "leaderboard"];
     const forcedHidden = appState.isMobile ? ["review", "cnc"] : [];
 
     tabs.forEach((tab) => {
@@ -261,7 +264,9 @@ globalThis.addEventListener("resize", () => {
     if (
         modeChanged &&
         !appState.isMobile &&
-        !["review", "cnc", "hand", "completed"].includes(appState.currentTab)
+        !["review", "cnc", "hand", "completed", "leaderboard"].includes(
+            appState.currentTab
+        )
     ) {
         appState.currentTab = "review";
         tabChanged = true;

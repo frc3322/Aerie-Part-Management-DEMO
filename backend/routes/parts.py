@@ -621,6 +621,54 @@ def get_stats():
         return jsonify({"error": "Failed to retrieve statistics"}), 500
 
 
+@parts_bp.route("/leaderboard", methods=["GET"])
+@require_secret_key
+def get_leaderboard():
+    """Get leaderboard data with user scores based on completed parts.
+
+    Scoring: 1 point for current assignee, 0.5 points for each previous assignee.
+
+    Returns:
+        JSON: Leaderboard data sorted by total score
+    """
+    try:
+        # Get all completed parts
+        completed_parts = Part.query.filter_by(category="completed").all()
+
+        # Calculate scores
+        scores = {}
+
+        for part in completed_parts:
+            # Current assignee gets 1 point
+            if part.assigned:
+                scores[part.assigned] = scores.get(part.assigned, 0) + 1
+
+            # Previous assignees get 0.5 points each
+            misc_info = part.misc_info or {}
+            hand_workers = (
+                misc_info.get("handWorkers") or misc_info.get("hand_workers") or []
+            )
+
+            for worker in hand_workers:
+                if isinstance(worker, dict) and worker.get("name"):
+                    worker_name = worker["name"]
+                    # Don't double-count current assignee
+                    if worker_name != part.assigned:
+                        scores[worker_name] = scores.get(worker_name, 0) + 0.5
+
+        # Convert to sorted leaderboard
+        leaderboard = [
+            {"name": name, "score": score}
+            for name, score in sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        ]
+
+        return jsonify({"leaderboard": leaderboard})
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting leaderboard: {str(e)}")
+        return jsonify({"error": "Failed to retrieve leaderboard"}), 500
+
+
 @parts_bp.route("/auth/check", methods=["GET"])
 @require_secret_key
 def check_auth():

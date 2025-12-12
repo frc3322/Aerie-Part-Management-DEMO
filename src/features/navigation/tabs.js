@@ -11,6 +11,7 @@ import { renderReview } from "../tabs/review.js";
 import { renderCNC } from "../tabs/cnc.js";
 import { renderHandFab } from "../tabs/handFab.js";
 import { renderCompleted } from "../tabs/completed.js";
+import { renderLeaderboard, loadLeaderboard } from "../tabs/leaderboard.js";
 import { saveCurrentTab } from "../state/persistence.js";
 import {
     getState,
@@ -20,7 +21,7 @@ import {
 
 // Debounce timer for search
 let searchDebounceTimer = null;
-const DESKTOP_TABS = ["review", "cnc", "hand", "completed"];
+const DESKTOP_TABS = ["review", "cnc", "hand", "completed", "leaderboard"];
 const MOBILE_TABS = ["hand", "completed"];
 let mobileGesturesAttached = false;
 let swipeStartX = 0;
@@ -170,6 +171,10 @@ export async function switchTab(tab) {
             if (targetTab === "review") {
                 // Load all parts for review tab to ensure proper categorization
                 await loadAllParts();
+            } else if (targetTab === "leaderboard") {
+                // Load leaderboard data
+                await loadLeaderboard();
+                renderLeaderboard();
             } else {
                 // Load fresh data for specific category
                 await loadPartsForCategory(targetTab);
@@ -332,4 +337,12 @@ subscribe("parts.hand", () => {
 
 subscribe("parts.completed", () => {
     renderCompleted();
+    // Refresh leaderboard when completed parts change
+    if (getCurrentTab() === "leaderboard") {
+        loadLeaderboard();
+    }
+});
+
+subscribe("leaderboard", () => {
+    renderLeaderboard();
 });

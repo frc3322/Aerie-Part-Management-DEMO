@@ -6,7 +6,13 @@ import { renderReview } from "../tabs/review.js";
 import { renderCNC } from "../tabs/cnc.js";
 import { renderHandFab } from "../tabs/handFab.js";
 import { renderCompleted } from "../tabs/completed.js";
-import { loadCurrentTab, loadTabVisibility, loadDisable3JSPreview, saveDisable3JSPreview } from "./persistence.js";
+import { renderLeaderboard } from "../tabs/leaderboard.js";
+import {
+    loadCurrentTab,
+    loadTabVisibility,
+    loadDisable3JSPreview,
+    saveDisable3JSPreview,
+} from "./persistence.js";
 import {
     initReactiveState,
     setState,
@@ -47,12 +53,15 @@ export const appState = {
     },
     // Statistics
     stats: null,
+    // Leaderboard data
+    leaderboard: [],
     // Tab visibility settings
     tabVisibility: {
         review: true,
         cnc: true,
         hand: true,
         completed: true,
+        leaderboard: true,
     },
     // Display settings
     disable3JSPreview: false,
@@ -67,7 +76,10 @@ initReactiveState(appState);
 function loadPersistedState() {
     // Load current tab
     const savedTab = loadCurrentTab();
-    if (savedTab && ["review", "cnc", "hand", "completed"].includes(savedTab)) {
+    if (
+        savedTab &&
+        ["review", "cnc", "hand", "completed", "leaderboard"].includes(savedTab)
+    ) {
         setState("currentTab", savedTab);
     }
     if (
@@ -117,7 +129,9 @@ export function detectMobileDevice() {
     }
     if (
         !isMobile &&
-        !["review", "cnc", "hand", "completed"].includes(getState("currentTab"))
+        !["review", "cnc", "hand", "completed", "leaderboard"].includes(
+            getState("currentTab")
+        )
     ) {
         setState("currentTab", "review");
     }
@@ -143,6 +157,10 @@ async function reRenderCurrentTab() {
         }
         case "completed": {
             renderCompleted();
+            break;
+        }
+        case "leaderboard": {
+            renderLeaderboard();
             break;
         }
     }

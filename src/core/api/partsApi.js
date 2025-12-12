@@ -128,6 +128,14 @@ export async function getStats() {
 }
 
 /**
+ * Get leaderboard data
+ * @returns {Promise<Object>} Leaderboard data
+ */
+export async function getLeaderboard() {
+    return await apiGet("/parts/leaderboard");
+}
+
+/**
  * Upload a STEP or PDF file for a part
  * @param {number} partId - Part ID
  * @param {File} file - STEP or PDF file to upload
