@@ -41,7 +41,7 @@ def get_config_value(key: str, default: Any = None) -> Any:
                 return json.loads(env_value)
             except json.JSONDecodeError:
                 return [item.strip() for item in env_value.split(",") if item.strip()]
-        elif key in ["DEBUG", "TESTING", "SQLALCHEMY_TRACK_MODIFICATIONS"]:
+        elif key in ["SQLALCHEMY_TRACK_MODIFICATIONS"]:
             return env_value.lower() in ("true", "1", "yes", "on")
         return env_value
 
@@ -60,9 +60,9 @@ class Config:
 
     # Flask settings
     SECRET_KEY = get_config_value("SECRET_KEY", "dev-secret-key-change-in-production")
-    DEBUG = get_config_value("DEBUG", False)
-    TESTING = get_config_value("TESTING", False)
-    FLASK_ENV = get_config_value("FLASK_ENV", "development")
+    DEBUG = False  # Always production
+    TESTING = False  # Always production
+    FLASK_ENV = get_config_value("FLASK_ENV", "production")
 
     # Database settings
     SQLALCHEMY_DATABASE_URI = get_config_value("DATABASE_URL", "sqlite:///parts.db")
@@ -91,22 +91,6 @@ class Config:
     ONSHAPE_SECRET_KEY = get_config_value("ONSHAPE_SECRET_KEY", "")
 
 
-class DevelopmentConfig(Config):
-    """Development configuration."""
-
-    DEBUG = True
-    SQLALCHEMY_DATABASE_URI = get_config_value("DATABASE_URL", "sqlite:///parts_dev.db")
-
-
-class TestingConfig(Config):
-    """Testing configuration."""
-
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = get_config_value(
-        "DATABASE_URL", "sqlite:///parts_test.db"
-    )
-
-
 class ProductionConfig(Config):
     """Production configuration."""
 
@@ -133,8 +117,8 @@ class ProductionConfig(Config):
 
 # Configuration mapping
 config = {
-    "development": DevelopmentConfig,
-    "testing": TestingConfig,
+    "development": ProductionConfig,
+    "testing": ProductionConfig,
     "production": ProductionConfig,
-    "default": DevelopmentConfig,
+    "default": ProductionConfig,
 }

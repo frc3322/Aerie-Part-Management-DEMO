@@ -15,8 +15,6 @@ def create_default_config() -> Dict[str, Any]:
     return {
         # Flask settings
         "SECRET_KEY": secrets.token_hex(32),
-        "DEBUG": False,
-        "TESTING": False,
         "FLASK_ENV": "production",
         # Database settings
         "DATABASE_URL": "sqlite:///parts_prod.db",
@@ -159,6 +157,33 @@ def prompt_for_cors_origins(default: list) -> list:
     return [origin.strip() for origin in response.split(",") if origin.strip()]
 
 
+def prompt_use_defaults_for_rest() -> bool:
+    """Prompt user if they want to use defaults for remaining settings.
+
+    Returns:
+        bool: True if user wants to use defaults, False otherwise
+    """
+    print("\nUSE_DEFAULTS_FOR_REST:")
+    print("  Description: Use default values for all remaining configuration settings")
+    print("  Default: false (will prompt for each setting)")
+
+    try:
+        while True:
+            response = (
+                input("  Use defaults for remaining settings? (y/N): ").strip().lower()
+            )
+            if not response or response in ["n", "no", "false", "0", "off"]:
+                return False
+            elif response in ["y", "yes", "true", "1", "on"]:
+                return True
+            else:
+                print("  Please enter 'y' or 'n'")
+    except EOFError:
+        # Non-interactive mode, use default (don't use defaults)
+        print("  Using default: false")
+        return False
+
+
 def main():
     """Main function to create config.json file."""
     print("CONFIG HELPER: Part Management System Configuration Creator")
@@ -188,55 +213,11 @@ def main():
     print("\nConfiguration Options:")
     print("-" * 30)
 
-    # Prompt for each configuration value
-    config["DATABASE_URL"] = prompt_for_value(
-        "DATABASE_URL",
-        config["DATABASE_URL"],
-        "Database connection URL (e.g., sqlite:///parts_prod.db or postgresql://user:pass@localhost/db)",
-    )
-
+    # Prompt for critical security/API keys first
     config["SECRET_KEY"] = prompt_for_value(
         "SECRET_KEY",
         config["SECRET_KEY"],
         "Secret key for Flask sessions and security (should be random and kept secret)",
-    )
-
-    config["FLASK_ENV"] = prompt_for_value(
-        "FLASK_ENV", config["FLASK_ENV"], "Flask environment (production, development)"
-    )
-
-    config["CORS_ORIGINS"] = prompt_for_cors_origins(
-        config.get("CORS_ORIGINS", ["http://localhost:3000"])
-    )
-
-    config["BASE_PATH"] = prompt_for_value(
-        "BASE_PATH",
-        config.get("BASE_PATH", ""),
-        "URL subpath for deployment (e.g., /part-management-system for Cloudflare tunnels, leave empty for root deployment)",
-    )
-
-    config["DEBUG"] = prompt_for_bool(
-        "DEBUG",
-        config.get("DEBUG", False),
-        "Enable debug mode (shows detailed error messages and reloads on code changes)",
-    )
-
-    config["TESTING"] = prompt_for_bool(
-        "TESTING",
-        config.get("TESTING", False),
-        "Enable testing mode (uses test database and disables some features)",
-    )
-
-    config["UPLOAD_FOLDER"] = prompt_for_value(
-        "UPLOAD_FOLDER",
-        config.get("UPLOAD_FOLDER", "uploads"),
-        "Directory path for file uploads (relative to backend directory)",
-    )
-
-    config["ALLOWED_EXTENSIONS"] = prompt_for_list(
-        "ALLOWED_EXTENSIONS",
-        config.get("ALLOWED_EXTENSIONS", ["step", "stp", "pdf"]),
-        "Comma-separated list of allowed file extensions for uploads",
     )
 
     config["ONSHAPE_ACCESS_KEY"] = prompt_for_value(
@@ -250,6 +231,47 @@ def main():
         config.get("ONSHAPE_SECRET_KEY", ""),
         "Onshape secret key for drawing downloads",
     )
+
+    # Ask if user wants to use defaults for remaining settings
+    use_defaults_for_rest = prompt_use_defaults_for_rest()
+
+    if not use_defaults_for_rest:
+        # Prompt for each remaining configuration value
+        config["DATABASE_URL"] = prompt_for_value(
+            "DATABASE_URL",
+            config["DATABASE_URL"],
+            "Database connection URL (e.g., sqlite:///parts_prod.db or postgresql://user:pass@localhost/db)",
+        )
+
+        config["FLASK_ENV"] = prompt_for_value(
+            "FLASK_ENV",
+            config["FLASK_ENV"],
+            "Flask environment (production, development)",
+        )
+
+        config["CORS_ORIGINS"] = prompt_for_cors_origins(
+            config.get("CORS_ORIGINS", ["http://localhost:3000"])
+        )
+
+        config["BASE_PATH"] = prompt_for_value(
+            "BASE_PATH",
+            config.get("BASE_PATH", ""),
+            "URL subpath for deployment (e.g., /part-management-system for Cloudflare tunnels, leave empty for root deployment)",
+        )
+
+        config["UPLOAD_FOLDER"] = prompt_for_value(
+            "UPLOAD_FOLDER",
+            config.get("UPLOAD_FOLDER", "uploads"),
+            "Directory path for file uploads (relative to backend directory)",
+        )
+
+        config["ALLOWED_EXTENSIONS"] = prompt_for_list(
+            "ALLOWED_EXTENSIONS",
+            config.get("ALLOWED_EXTENSIONS", ["step", "stp", "pdf"]),
+            "Comma-separated list of allowed file extensions for uploads",
+        )
+    else:
+        print("\nUsing default values for remaining configuration settings.")
 
     # Write config to file
     try:

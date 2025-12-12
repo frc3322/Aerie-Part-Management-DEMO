@@ -95,9 +95,7 @@ def create_app(config_name: str = "default") -> Flask:
         upload_folder = app.config.get("UPLOAD_FOLDER", "uploads")
         os.makedirs(upload_folder, exist_ok=True)
 
-        # Initialize with sample data if in development
-        if config_name == "development":
-            _init_sample_data()
+        # Sample data initialization removed for production
 
     return app
 

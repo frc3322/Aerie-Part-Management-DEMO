@@ -234,11 +234,6 @@ def run_production_multiworker(
     flask_env = get_config_value(config, "FLASK_ENV", "production")
     env["FLASK_ENV"] = flask_env
 
-    debug = get_config_value(config, "DEBUG", False)
-    env["DEBUG"] = str(debug).lower()
-
-    testing = get_config_value(config, "TESTING", False)
-    env["TESTING"] = str(testing).lower()
 
     cors_origins = get_cors_origins(config)
     env["CORS_ORIGINS"] = json.dumps(cors_origins)
@@ -274,11 +269,6 @@ def run_production_eventlet(config: dict, port: int = 8000) -> bool:
     flask_env = get_config_value(config, "FLASK_ENV", "production")
     env["FLASK_ENV"] = flask_env
 
-    debug = get_config_value(config, "DEBUG", False)
-    env["DEBUG"] = str(debug).lower()
-
-    testing = get_config_value(config, "TESTING", False)
-    env["TESTING"] = str(testing).lower()
 
     cors_origins = get_cors_origins(config)
     env["CORS_ORIGINS"] = json.dumps(cors_origins)
@@ -314,11 +304,6 @@ def run_production_gevent(config: dict, workers: int = 4, port: int = 8000) -> b
     flask_env = get_config_value(config, "FLASK_ENV", "production")
     env["FLASK_ENV"] = flask_env
 
-    debug = get_config_value(config, "DEBUG", False)
-    env["DEBUG"] = str(debug).lower()
-
-    testing = get_config_value(config, "TESTING", False)
-    env["TESTING"] = str(testing).lower()
 
     cors_origins = get_cors_origins(config)
     env["CORS_ORIGINS"] = json.dumps(cors_origins)
@@ -358,11 +343,6 @@ def run_production_waitress(config: dict, port: int = 8000) -> bool:
     flask_env = get_config_value(config, "FLASK_ENV", "production")
     env["FLASK_ENV"] = flask_env
 
-    debug = get_config_value(config, "DEBUG", False)
-    env["DEBUG"] = str(debug).lower()
-
-    testing = get_config_value(config, "TESTING", False)
-    env["TESTING"] = str(testing).lower()
 
     cors_origins = get_cors_origins(config)
     env["CORS_ORIGINS"] = json.dumps(cors_origins)
