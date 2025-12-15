@@ -261,13 +261,48 @@ closeModal('processing-modal');
 
 **Benefits**: Consistent UX, accessibility compliance, centralized modal logic
 
+#### router.js - API Router (Single Entry Point)
+
+**Purpose**: Single entry point for all API calls, enabling easy switching between backend and frontend storage
+
+**Integration Pattern**:
+```javascript
+import { getParts, createPart, withErrorHandling } from '../core/api/router.js';
+
+// All API calls go through the router
+const parts = await getParts();
+await withErrorHandling(
+    async () => await createPart(partData),
+    {
+        loadingTargets: [submitButton],
+        onError: (error) => showErrorMessage(error.message),
+        onSuccess: () => refreshUI()
+    }
+);
+```
+
+**Benefits**: Single point of modification for demo mode, prevents merge conflicts, clean API abstraction
+
+#### apiClient.js - Low-Level HTTP Client
+
+**Purpose**: Handles HTTP requests, authentication, and response parsing
+
+**Integration Pattern**:
+```javascript
+// Used internally by router.js - not imported directly by features
+import { apiGet, apiPost } from './apiClient.js';
+```
+
+**Benefits**: Centralized HTTP logic, automatic auth handling, consistent error formatting
+
 #### apiErrorHandler.js - Error Handling Wrapper
 
 **Purpose**: Standardized error handling for API operations
 
 **Integration Pattern**:
 ```javascript
-import { withErrorHandling } from '../utils/apiErrorHandler.js';
+// Imported through router.js
+import { withErrorHandling } from '../core/api/router.js';
 
 // Wrap API calls with error handling
 await withErrorHandling(
@@ -338,19 +373,25 @@ await withErrorHandling(
 
 ```
 main.js
-├── utils/
-│   ├── eventDelegation.js (event handling system)
-│   ├── reactiveState.js (reactive state management)
-│   ├── modalManager.js (modal system)
-│   ├── apiErrorHandler.js (error handling)
-│   └── templateHelpers.js (DOM utilities)
+├── core/
+│   ├── utils/
+│   │   ├── eventDelegation.js (event handling system)
+│   │   ├── reactiveState.js (reactive state management)
+│   │   ├── modalManager.js (modal system)
+│   │   ├── templateHelpers.js (DOM utilities)
+│   │   └── helpers.js (shared utilities)
+│   └── api/
+│       ├── router.js (API entry point) → apiClient, partsApi, apiErrorHandler
+│       ├── apiClient.js (HTTP client)
+│       ├── partsApi.js (parts operations)
+│       └── apiErrorHandler.js (error handling)
 ├── state.js (core state + reactive wrapper)
 ├── tabs.js (navigation + reactive subscriptions)
 │   ├── review.js → reactiveState, templateHelpers
 │   ├── cnc.js → reactiveState, templateHelpers
 │   ├── handFab.js → reactiveState, templateHelpers, helpers.js
 │   └── completed.js → reactiveState, templateHelpers
-├── partActions.js → reactiveState, modalManager, apiErrorHandler
+├── partActions.js → reactiveState, modalManager, router
 ├── modals.js → reactiveState, modalManager, templateHelpers, helpers.js
 └── formHandler.js → reactiveState, modalManager, templateHelpers, helpers.js
 ```

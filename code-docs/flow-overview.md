@@ -183,9 +183,10 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     subgraph FE["Frontend Calls 🟦"]
-        A1[partsApi.js\n(high-level)]
-        A2[apiClient.js\n(fetch wrapper)]
-        A3[auth.js\ncookies + key]
+        A1[router.js\n(API entry point)]
+        A2[partsApi.js\n(high-level)]
+        A3[apiClient.js\n(fetch wrapper)]
+        A4[auth.js\ncookies + key]
     end
 
     subgraph BE["Backend Routes 🟪"]

@@ -198,8 +198,17 @@ API key input and validation
 
 ## Utility Files
 
+### router.js - API Router
+**Purpose**: Single entry point for all API calls, enables switching between backend and demo storage
+
+**Functions**:
+- All functions from partsApi.js, apiClient.js, and apiErrorHandler.js
+- `getParts()`, `createPart()`, `updatePart()`, `deletePart()`
+- `assignPart()`, `unclaimPart()`, `completePart()`, `withErrorHandling()`
+- `apiGet()`, `apiPost()`, `apiPut()`, `apiDelete()`, `apiDownloadFile()`
+
 ### apiClient.js - HTTP Client
-**Purpose**: Low-level API communication
+**Purpose**: Low-level API communication (internal use only)
 
 **Functions**:
 - `apiGet()`, `apiPost()`, `apiPut()`, `apiDelete()`
@@ -207,12 +216,12 @@ API key input and validation
 - `apiDownloadFile()`: File downloads
 
 ### partsApi.js - Parts API
-**Purpose**: High-level parts operations
+**Purpose**: High-level parts operations (internal use only)
 
 **Functions**:
 - `getParts()`, `createPart()`, `updatePart()`, `deletePart()`
 - `assignPart()`, `unclaimPart()`, `completePart()`
-- `uploadFile()`, `downloadFile()`, `convertStepFile()`
+- `uploadPartFile()`, `downloadPartFile()`, `getPartFileBlobUrl()`
 
 ### auth.js (utils) - Auth Utilities
 **Purpose**: Authentication helpers

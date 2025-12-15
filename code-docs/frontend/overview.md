@@ -28,8 +28,13 @@ src/
 │   ├── cnc.js             # CNC machining tab logic (includes STEP download)
 │   ├── handFab.js         # Hand fabrication tab logic
 │   └── completed.js       # Completed parts tab logic
-├── utils/                 # Utility functions
-│   └── partsApi.js        # API communication utilities
+├── core/
+│   ├── api/
+│   │   ├── router.js       # API router (single entry point)
+│   │   ├── apiClient.js    # Low-level HTTP client
+│   │   ├── partsApi.js     # Parts API functions
+│   │   └── apiErrorHandler.js # API error handling
+│   └── utils/              # Utility functions
 └── components/            # Specialized components
     └── threeDViewer.js    # 3D model visualization (future implementation)
 ```
@@ -278,11 +283,11 @@ export function confirmDuplicate() {
 ```javascript
 // In partsApi.js - add new API function
 export async function duplicatePart(partId, modifications = {}) {
-    return makeRequest(`/parts/${partId}/duplicate`, {
-        method: 'POST',
-        body: JSON.stringify(modifications)
-    });
+    return apiPost(`/parts/${partId}/duplicate`, modifications);
 }
+
+// Function will be automatically available through router.js
+import { duplicatePart } from '../core/api/router.js';
 ```
 
 #### 8. Update Documentation
