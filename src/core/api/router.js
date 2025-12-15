@@ -2,6 +2,9 @@
 // Routes all backend API calls from frontend files
 // Can be easily modified to use frontend-based storage for demo website
 
+// Demo API - Using in-memory storage instead of backend
+// Commented out backend API imports for reference
+/*
 import {
     apiGet,
     apiPost,
@@ -10,6 +13,7 @@ import {
     apiPostMultipart,
     apiDownloadFile,
 } from "./apiClient.js";
+*/
 
 import {
     getParts,
@@ -30,10 +34,12 @@ import {
     getPartFileBlobUrl,
     getPartModelBlobUrl,
     getPartDrawingBlobUrl,
-} from "./partsApi.js";
+} from "../demo_api/index.js";
 
 import { withErrorHandling } from "./apiErrorHandler.js";
 
+// Demo API - API client functions not used (using in-memory storage)
+/*
 // Export all API client functions
 export {
     apiGet,
@@ -43,6 +49,7 @@ export {
     apiPostMultipart,
     apiDownloadFile,
 };
+*/
 
 // Export all parts API functions
 export {
