@@ -42,8 +42,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    // Separate Three.js into its own chunk for better caching
-                    three: ["three"],
+                    // No manual chunks needed
                 },
                 // Use content hash for better caching
                 chunkFileNames: "assets/[name]-[hash].js",
