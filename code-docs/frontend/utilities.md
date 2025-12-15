@@ -4,7 +4,52 @@
 
 The `src/utils/` directory contains shared helper functions used throughout the application. These utilities follow functional programming principles and provide common operations for data manipulation, formatting, and user interface enhancements.
 
-## API Communication Utilities (partsApi.js)
+## API Communication Architecture
+
+### Router (router.js) - Single Entry Point
+
+**Purpose**: Centralized API access point that enables switching between backend and frontend storage
+
+**Usage Pattern**:
+```javascript
+// Import all API functions from single location
+import {
+    getParts, createPart, updatePart, deletePart,
+    approvePart, assignPart, completePart,
+    withErrorHandling
+} from '../core/api/router.js';
+
+// All API calls go through router
+const parts = await getParts();
+await withErrorHandling(async () => await createPart(data), options);
+```
+
+**Benefits**:
+- Single point of modification for demo mode
+- Prevents merge conflicts when switching storage types
+- Clean API abstraction layer
+
+### HTTP Client (apiClient.js) - Low-Level HTTP Operations
+
+**Purpose**: Handles HTTP requests, authentication headers, and response parsing
+
+**Core Functions**:
+- `apiGet(endpoint, params)` - GET requests with query parameters
+- `apiPost(endpoint, data)` - POST requests with JSON body
+- `apiPut(endpoint, data)` - PUT requests for updates
+- `apiDelete(endpoint)` - DELETE requests
+- `apiPostMultipart(endpoint, formData)` - File upload requests
+- `apiDownloadFile(endpoint, filename)` - File download requests
+
+**Features**:
+- Automatic authentication header injection
+- JSON request/response handling
+- Network error handling with user-friendly messages
+- File download support with blob URLs
+
+### Parts API (partsApi.js) - Domain-Specific Operations
+
+**Purpose**: High-level parts management functions that wrap HTTP client calls
 
 ### HTTP Request Abstraction
 
