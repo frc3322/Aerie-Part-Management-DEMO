@@ -474,14 +474,16 @@ function closeAssignModalInternal(skipShowActionIcon) {
  */
 export function handleAssignKeyup(event) {
     if (event.key === "Enter") {
-        confirmAssignment();
+        confirmAssignment(event);
     }
 }
 
 /**
  * Confirm assignment and mark part as in progress
+ * @param {Event} event - The form submit event
  */
-export async function confirmAssignment() {
+export async function confirmAssignment(event) {
+    event.preventDefault();
     const name = document.getElementById("assign-input").value;
     if (name && name.trim() !== "") {
         const part = appState.parts.hand[pendingAssignmentIndex];
