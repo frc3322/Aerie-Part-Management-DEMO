@@ -1,3 +1,18 @@
+// Prevent FOUC by showing content after CSS loads
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+        // Small delay to ensure CSS is applied
+        setTimeout(() => {
+            document.body.classList.add("loaded");
+        }, 50);
+    });
+} else {
+    // DOM already loaded
+    setTimeout(() => {
+        document.body.classList.add("loaded");
+    }, 50);
+}
+
 import "./style.css";
 import meowImageUrl from "./Meow.png";
 
@@ -105,6 +120,21 @@ function applyTooltip(element) {
     element.dataset.tooltipInitialized = "true";
     element.removeAttribute("title");
     element.classList.add("tooltip-target");
+}
+
+function triggerNeumorphicAnimations() {
+    // Animate all neumorphic elements at once (shadows/highlights only)
+    document
+        .querySelectorAll(".neumorphic-card")
+        .forEach((card) => card.classList.add("animate-pop-up"));
+
+    document
+        .querySelectorAll(".neumorphic-btn")
+        .forEach((button) => button.classList.add("animate-pop-up-btn"));
+
+    document
+        .querySelectorAll(".neumorphic-input")
+        .forEach((input) => input.classList.add("animate-pop-up-input"));
 }
 
 /**
@@ -235,7 +265,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (actionKey) {
         actionKey.addEventListener("click", (e) => {
             // If the element is faded (opacity < 0.1), let clicks pass through
-            const opacity = Number.parseFloat(getComputedStyle(actionKey).opacity);
+            const opacity = Number.parseFloat(
+                getComputedStyle(actionKey).opacity
+            );
             if (opacity < 0.1) {
                 e.stopPropagation();
                 // Create a new event at the same position to pass through
@@ -251,10 +283,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                     ctrlKey: e.ctrlKey,
                     shiftKey: e.shiftKey,
                     altKey: e.altKey,
-                    metaKey: e.metaKey
+                    metaKey: e.metaKey,
                 });
                 // Dispatch the event to the element underneath
-                document.elementFromPoint(e.clientX, e.clientY)?.dispatchEvent(newEvent);
+                document
+                    .elementFromPoint(e.clientX, e.clientY)
+                    ?.dispatchEvent(newEvent);
                 e.preventDefault();
             }
         });
@@ -271,6 +305,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         switchTab(appState.currentTab);
         scheduleRefreshNotice();
     }
+
+    // Trigger neumorphic pop-up animations after initialization
+    setTimeout(() => {
+        triggerNeumorphicAnimations();
+    }, 100);
 });
 
 globalThis.addEventListener("authenticated", () => {
