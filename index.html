@@ -37,7 +37,21 @@
         </style>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     </head>
-    <body class="min-h-screen flex flex-col p-6">
+    <!-- Demo Banner -->
+    <div
+        id="demo-banner"
+        class="demo-banner neumorphic-card p-3 mb-4 flex items-center text-sm text-amber-200 bg-linear-to-r from-amber-900/20 to-orange-900/20 border-amber-500/20"
+        style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000"
+    >
+        <span class="flex items-center gap-2">
+            <i class="fa-solid fa-info-circle text-amber-400"></i>
+            <span
+                >This is a demo, all data is stored locally and will be reset
+                upon reload</span
+            >
+        </span>
+    </div>
+    <body class="min-h-screen flex flex-col p-6 pt-20">
         {{> header}} {{> tabs}}
 
         <!-- Content Area -->

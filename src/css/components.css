@@ -119,6 +119,12 @@ td:has(.action-buttons) {
     scrollbar-color: #4a5568 #1a1d24;
 }
 
+/* Demo Banner */
+.demo-banner {
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    box-shadow: 4px 4px 8px #1a1d24, -4px -4px 8px #2c313c;
+}
+
 /* Allow hover shadows/glow to spill vertically for part tables (but don't affect CNC grid) */
 .overflow-x-auto:has(table:has(.part-row)) {
     overflow-y: visible;
