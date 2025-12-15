@@ -47,9 +47,9 @@ let lastAuthCheckTime = 0;
 const AUTH_CHECK_COOLDOWN = 2000; // 2 seconds
 
 /**
- * Check authentication status with rate limiting
- * @param {string} apiKey - The API key to validate
- * @returns {Promise<boolean>} True if API key is valid, false otherwise
+ * Check authentication status with rate limiting (demo mode - always succeeds)
+ * @param {string} apiKey - The API key to validate (ignored in demo mode)
+ * @returns {Promise<boolean>} Always returns true in demo mode
  */
 export async function checkAuthStatus(apiKey) {
     const now = Date.now();
@@ -62,30 +62,6 @@ export async function checkAuthStatus(apiKey) {
 
     lastAuthCheckTime = Date.now();
 
-    try {
-        // Use Vite's BASE_URL which is set via VITE_BASE_PATH env var during build
-        // This respects the base path configured for subpath deployments
-        const base = import.meta.env.BASE_URL || "/";
-        const basePath = base === "/" ? "" : base.replace(/\/$/, "");
-
-        // Always use relative URL with base path - works for both dev and prod when frontend/backend are same server
-        const authUrl = basePath + "/api/parts/auth/check";
-
-        const response = await fetch(authUrl, {
-            method: "GET",
-            headers: {
-                "X-API-Key": apiKey,
-                "Content-Type": "application/json",
-                "Cache-Control": "no-cache",
-                Pragma: "no-cache",
-            },
-            // Prevent browser from using cached responses
-            cache: "no-store",
-        });
-
-        return response.ok && response.status === 200;
-    } catch (error) {
-        console.error("Error checking auth status:", error);
-        return false;
-    }
+    // Demo mode - always return successful authentication
+    return true;
 }
