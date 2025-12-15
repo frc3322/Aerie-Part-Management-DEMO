@@ -1,8 +1,8 @@
 // Demo API - In-memory implementation of parts management API
 // Matches the interface of partsApi.js but uses in-memory storage
 
-import partStore from './store.js';
-import { seedParts } from './seedData.js';
+import partStore from "./store.js";
+import { seedParts } from "./seedData.js";
 
 // Initialize store with seed data
 partStore.setInitialData(seedParts);
@@ -41,7 +41,7 @@ function toApiFormat(part) {
         createdAt: part.created_at,
         updatedAt: part.updated_at,
         category: part.category,
-        amount: part.amount
+        amount: part.amount,
     };
 }
 
@@ -57,7 +57,7 @@ export async function getParts(options = {}) {
             parts: result.parts.map(toApiFormat),
             total: result.total,
             limit: result.limit,
-            offset: result.offset
+            offset: result.offset,
         };
     } catch (error) {
         throw createErrorResponse("Failed to retrieve parts", 500);
@@ -108,7 +108,10 @@ export async function createPart(partData) {
         if (amount != null) {
             const parsedAmount = parseInt(amount);
             if (isNaN(parsedAmount) || parsedAmount <= 0) {
-                throw createErrorResponse("Amount must be a number greater than 0", 400);
+                throw createErrorResponse(
+                    "Amount must be a number greater than 0",
+                    400
+                );
             }
         }
 
@@ -120,7 +123,7 @@ export async function createPart(partData) {
             subsystem: subsystem.trim(),
             status: partData.status || "Pending",
             category: partData.category || "review",
-            amount: partData.amount || 1
+            amount: partData.amount || 1,
         };
 
         const part = partStore.createPart(normalizedData);
@@ -145,7 +148,10 @@ export async function updatePart(partId, partData) {
         }
 
         // Validation
-        if (partData.subsystem && (!partData.subsystem || !partData.subsystem.trim())) {
+        if (
+            partData.subsystem &&
+            (!partData.subsystem || !partData.subsystem.trim())
+        ) {
             throw createErrorResponse("Subsystem is required", 400);
         }
 
@@ -157,7 +163,10 @@ export async function updatePart(partId, partData) {
         if (partData.amount != null) {
             const parsedAmount = parseInt(partData.amount);
             if (isNaN(parsedAmount) || parsedAmount <= 0) {
-                throw createErrorResponse("Amount must be a number greater than 0", 400);
+                throw createErrorResponse(
+                    "Amount must be a number greater than 0",
+                    400
+                );
             }
         }
 
@@ -207,7 +216,7 @@ export async function approvePart(partId, payload = {}) {
         // Update status and move to appropriate category
         const updateData = {
             status: "Reviewed",
-            category: part.type === "cnc" ? "cnc" : "hand"
+            category: part.type === "cnc" ? "cnc" : "hand",
         };
 
         // Add reviewer info to misc_info if provided
@@ -215,7 +224,7 @@ export async function approvePart(partId, payload = {}) {
             const existingMisc = part.misc_info || {};
             updateData.misc_info = {
                 ...existingMisc,
-                reviewer: payload.reviewer
+                reviewer: payload.reviewer,
             };
         }
 
@@ -247,20 +256,21 @@ export async function assignPart(partId, assignedUser) {
         const updateData = {
             assigned: assignedUser,
             claimed_date: new Date().toISOString(),
-            status: STATUS_IN_PROGRESS
+            status: STATUS_IN_PROGRESS,
         };
 
         // For hand fab parts, add worker to misc_info
         if (part.type === "hand") {
             const existingMisc = part.misc_info || {};
-            const handWorkers = existingMisc.handWorkers || existingMisc.hand_workers || [];
+            const handWorkers =
+                existingMisc.handWorkers || existingMisc.hand_workers || [];
             handWorkers.push({
                 name: assignedUser,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
             updateData.misc_info = {
                 ...existingMisc,
-                handWorkers
+                handWorkers,
             };
         }
 
@@ -287,7 +297,10 @@ export async function unclaimPart(partId) {
         const updateData = {
             assigned: null,
             claimed_date: null,
-            status: part.status === STATUS_IN_PROGRESS ? "Already Started" : "Pending"
+            status:
+                part.status === STATUS_IN_PROGRESS
+                    ? "Already Started"
+                    : "Pending",
         };
 
         const updatedPart = partStore.updatePart(partId, updateData);
@@ -313,7 +326,7 @@ export async function completePart(partId, payload = {}) {
 
         const updateData = {
             status: "Completed",
-            category: "completed"
+            category: "completed",
         };
 
         // Merge any misc_info from payload
@@ -322,7 +335,7 @@ export async function completePart(partId, payload = {}) {
             const incomingMisc = payload.misc_info || payload.miscInfo;
             updateData.misc_info = {
                 ...existingMisc,
-                ...incomingMisc
+                ...incomingMisc,
             };
         }
 
@@ -353,7 +366,7 @@ export async function revertPart(partId) {
         // Move back to appropriate category
         const updateData = {
             category: part.type === "cnc" ? "cnc" : "hand",
-            status: STATUS_IN_PROGRESS
+            status: STATUS_IN_PROGRESS,
         };
 
         const updatedPart = partStore.updatePart(partId, updateData);
@@ -386,7 +399,7 @@ export async function getStats() {
             by_category: stats.by_category,
             by_status: stats.by_status,
             assignment: stats.assignment,
-            total: stats.total
+            total: stats.total,
         };
     } catch (error) {
         throw createErrorResponse("Failed to retrieve statistics", 500);
@@ -430,7 +443,7 @@ export async function uploadPartFile(partId, file) {
         return {
             message: "File uploaded successfully",
             filename: filename,
-            file_path: `/uploads/${partId}/${filename}`
+            file_path: `/uploads/${partId}/${filename}`,
         };
     } catch (error) {
         if (error.status) throw error;
@@ -456,7 +469,7 @@ export async function downloadPartFile(partId, filename) {
         }
 
         // Return empty blob for mock download
-        return new Blob([], { type: 'application/octet-stream' });
+        return new Blob([], { type: "application/octet-stream" });
     } catch (error) {
         if (error.status) throw error;
         throw createErrorResponse("Failed to download file", 500);
@@ -480,7 +493,7 @@ export async function getPartFileBlobUrl(partId) {
         }
 
         // Return empty blob URL
-        const blob = new Blob([], { type: 'application/octet-stream' });
+        const blob = new Blob([], { type: "application/octet-stream" });
         return URL.createObjectURL(blob);
     } catch (error) {
         throw error;
@@ -504,7 +517,7 @@ export async function getPartModelBlobUrl(partId) {
         }
 
         // Return empty blob URL for GLTF
-        const blob = new Blob([], { type: 'model/gltf-binary' });
+        const blob = new Blob([], { type: "model/gltf-binary" });
         return URL.createObjectURL(blob);
     } catch (error) {
         throw error;
@@ -525,7 +538,9 @@ export async function getPartDrawingBlobUrl(partId, options = {}) {
         }
 
         if (part.type !== "hand") {
-            throw new Error("Drawing downloads are only available for hand fab parts");
+            throw new Error(
+                "Drawing downloads are only available for hand fab parts"
+            );
         }
 
         if (!part.onshape_url) {
@@ -533,7 +548,7 @@ export async function getPartDrawingBlobUrl(partId, options = {}) {
         }
 
         // Return empty blob URL for PDF
-        const blob = new Blob([], { type: 'application/pdf' });
+        const blob = new Blob([], { type: "application/pdf" });
         return URL.createObjectURL(blob);
     } catch (error) {
         throw error;
