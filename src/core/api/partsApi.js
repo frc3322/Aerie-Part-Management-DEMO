@@ -11,6 +11,9 @@ import {
 } from "./apiClient.js";
 import { getApiKeyFromCookie } from "../auth/auth.js";
 
+// Simple cache for CAD model blob URLs
+const cadModelCache = new Map();
+
 /**
  * Get all parts with optional filtering and pagination
  * @param {Object} options - Query options
@@ -189,6 +192,11 @@ export async function getPartFileBlobUrl(partId) {
  * @returns {Promise<string>} Blob URL to the GLTF model
  */
 export async function getPartModelBlobUrl(partId) {
+    // Check cache first
+    if (cadModelCache.has(partId)) {
+        return cadModelCache.get(partId);
+    }
+
     // Use Vite's BASE_URL which respects the subpath configured during build
     const base = import.meta.env.BASE_URL || "/";
     const basePath = base === "/" ? "" : base.replace(/\/$/, "");
@@ -207,7 +215,12 @@ export async function getPartModelBlobUrl(partId) {
     }
 
     const blob = await response.blob();
-    return URL.createObjectURL(blob);
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Cache the blob URL
+    cadModelCache.set(partId, blobUrl);
+
+    return blobUrl;
 }
 
 /**
