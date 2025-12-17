@@ -252,3 +252,49 @@ export async function getPartDrawingBlobUrl(partId, options = {}) {
     const blob = await response.blob();
     return URL.createObjectURL(blob);
 }
+
+/**
+ * Upload rendered views for a part
+ * @param {number} partId - Part ID
+ * @param {FormData} formData - Multipart form data with view blobs
+ * @returns {Promise<Object>} Upload result
+ */
+export async function uploadPartViews(partId, formData) {
+    return await apiPostMultipart(`/parts/${partId}/views`, formData);
+}
+
+/**
+ * Get views manifest for a part
+ * @param {number} partId - Part ID
+ * @returns {Promise<Object>} Views manifest
+ */
+export async function getPartViewsManifest(partId) {
+    return await apiGet(`/parts/${partId}/views`);
+}
+
+/**
+ * Get a specific view image as a blob URL
+ * @param {number} partId - Part ID
+ * @param {number} viewIndex - Index of the view (0-7)
+ * @returns {Promise<string>} Blob URL to the view image
+ */
+export async function getPartViewBlobUrl(partId, viewIndex) {
+    const base = import.meta.env.BASE_URL || "/";
+    const basePath = base === "/" ? "" : base.replace(/\/$/, "");
+    const url = basePath + `/api/parts/${partId}/views/${viewIndex}`;
+
+    const headers = {};
+    const apiKey = getApiKeyFromCookie();
+    if (apiKey) {
+        headers["X-API-Key"] = apiKey;
+    }
+
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+        throw new Error(`Failed to load view ${viewIndex}: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+}

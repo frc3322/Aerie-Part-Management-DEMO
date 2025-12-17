@@ -1023,3 +1023,110 @@ def get_part_model(part_id):
             f"Error getting model for part {part_id}: {str(e)}", exc_info=True
         )
         return jsonify({"error": "Failed to retrieve model"}), 500
+
+
+@parts_bp.route("/<int:part_id>/views", methods=["POST"])
+@require_secret_key
+def upload_part_views(part_id: int):
+    """Upload rendered views for a part.
+
+    Expects a multipart form with files named 'view_0', 'view_1', etc.
+
+    Args:
+        part_id: Part ID.
+
+    Returns:
+        JSON: Success status and updated manifest.
+    """
+    try:
+        part = Part.query.get_or_404(part_id)
+        upload_dir = get_upload_path(part_id) / "views"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        views_manifest = (part.misc_info or {}).get("views", {})
+        new_views = views_manifest.get("files", {})
+
+        for i in range(8):
+            file_key = f"view_{i}"
+            if file_key in request.files:
+                file = request.files[file_key]
+                if file and file.filename:
+                    filename = f"view_{i}.png"
+                    target_path = upload_dir / filename
+                    file.save(str(target_path))
+                    new_views[str(i)] = {
+                        "filename": filename,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+
+        # Update part manifest
+        misc_info = part.misc_info or {}
+        misc_info["views"] = {
+            "files": new_views,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        part.misc_info = misc_info
+        db.session.commit()
+
+        return jsonify({"success": True, "views": misc_info["views"]})
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error uploading views for part {part_id}: {str(e)}")
+        return jsonify({"error": "Failed to upload views"}), 500
+
+
+@parts_bp.route("/<int:part_id>/views", methods=["GET"])
+@require_secret_key
+def get_part_views_manifest(part_id: int):
+    """Get the views manifest for a part.
+
+    Args:
+        part_id: Part ID.
+
+    Returns:
+        JSON: Views manifest.
+    """
+    try:
+        part = Part.query.get_or_404(part_id)
+        views = (part.misc_info or {}).get("views")
+        if not views:
+            return jsonify({"views": None})
+
+        return jsonify({"views": views})
+
+    except Exception as e:
+        current_app.logger.error(
+            f"Error getting views manifest for part {part_id}: {str(e)}"
+        )
+        return jsonify({"error": "Failed to retrieve views manifest"}), 500
+
+
+@parts_bp.route("/<int:part_id>/views/<int:view_index>", methods=["GET"])
+@require_secret_key
+def get_part_view_image(part_id: int, view_index: int):
+    """Serve a specific rendered view image for a part.
+
+    Args:
+        part_id: Part ID.
+        view_index: Index of the view (0-7).
+
+    Returns:
+        File: The requested view image.
+    """
+    try:
+        Part.query.get_or_404(part_id)
+        upload_dir = get_upload_path(part_id) / "views"
+        filename = f"view_{view_index}.png"
+        file_path = upload_dir / filename
+
+        if not file_path.exists():
+            return jsonify({"error": "View image not found"}), 404
+
+        return send_file(str(file_path), mimetype="image/png", as_attachment=False)
+
+    except Exception as e:
+        current_app.logger.error(
+            f"Error getting view {view_index} for part {part_id}: {str(e)}"
+        )
+        return jsonify({"error": "Failed to retrieve view image"}), 500

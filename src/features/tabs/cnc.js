@@ -9,7 +9,10 @@ import {
     getStatusClass,
     getFileExtension,
 } from "../../core/utils/helpers.js";
-import { loadGLTFModel } from "../../components/threeDViewer.js";
+import {
+    loadPartStaticViews,
+    prefetchPartFrontView,
+} from "../../components/threeDViewer.js";
 import {
     getPartModelBlobUrl,
     getPartFileBlobUrl,
@@ -113,7 +116,7 @@ function buildModelPlaceholder(fileExt, is3JSPreviewDisabled) {
 
 function buildNotesSection(part) {
     return `
-    <div class="bg-gray-800 p-3 rounded-lg shadow-3d-inset min-h-[60px]">
+    <div class="p-3 rounded-lg shadow-3d-inset min-h-[60px]" style="background-color: #1f232cf2">
       <p class="text-sm text-gray-400 italic">"${part.notes || "No notes"}"</p>
     </div>
   `;
@@ -172,7 +175,7 @@ function renderPartCard(part, index, container) {
 
     card.innerHTML = `
     ${header}
-    <div class="h-48 w-full bg-gray-800 rounded-lg relative overflow-hidden shadow-3d-inset" id="model-view-${index}">
+    <div class="h-48 w-full rounded-lg relative overflow-hidden shadow-3d-inset" id="model-view-${index}" style="background-color: #1f232cf2">
       ${modelPlaceholder}
     </div>
     ${notesSection}
@@ -228,7 +231,9 @@ function loadPartModel(part, index) {
             }
 
             const modelUrl = await getPartModelBlobUrl(part.id);
-            loadGLTFModel(containerId, modelUrl);
+            if (fileExt === "step" || fileExt === "stp") {
+                await loadPartStaticViews(containerId, part, modelUrl);
+            }
         } catch (error) {
             console.error("Failed to load file:", error);
             const container = document.getElementById(containerId);
@@ -278,6 +283,8 @@ export function renderCNC() {
             is3JSPreviewDisabled && (fileExt === "step" || fileExt === "stp");
         if (!shouldSkip3DPreview) {
             loadPartModel(part, index);
+            // Prefetch front view for better initial load
+            prefetchPartFrontView(part.id);
         }
     }
 }

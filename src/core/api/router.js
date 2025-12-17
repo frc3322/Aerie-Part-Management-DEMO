@@ -30,6 +30,9 @@ import {
     getPartFileBlobUrl,
     getPartModelBlobUrl,
     getPartDrawingBlobUrl,
+    uploadPartViews,
+    getPartViewsManifest,
+    getPartViewBlobUrl,
 } from "./partsApi.js";
 
 import { withErrorHandling } from "./apiErrorHandler.js";
@@ -64,6 +67,9 @@ export {
     getPartFileBlobUrl,
     getPartModelBlobUrl,
     getPartDrawingBlobUrl,
+    uploadPartViews,
+    getPartViewsManifest,
+    getPartViewBlobUrl,
 };
 
 // Export error handling utility
