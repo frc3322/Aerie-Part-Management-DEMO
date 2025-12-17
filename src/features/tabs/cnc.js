@@ -9,15 +9,8 @@ import {
     getStatusClass,
     getFileExtension,
 } from "../../core/utils/helpers.js";
-import {
-    loadPartStaticViews,
-    prefetchPartFrontView,
-} from "../../components/threeDViewer.js";
-import {
-    getPartModelBlobUrl,
-    getPartFileBlobUrl,
-    downloadPartFile,
-} from "../../core/api/router.js";
+import { loadPartStaticViews } from "../../components/threeDViewer.js";
+import { getPartFileBlobUrl, downloadPartFile } from "../../core/api/router.js";
 
 /**
  * Render loading state for CNC tab
@@ -230,9 +223,8 @@ function loadPartModel(part, index) {
                 return;
             }
 
-            const modelUrl = await getPartModelBlobUrl(part.id);
             if (fileExt === "step" || fileExt === "stp") {
-                await loadPartStaticViews(containerId, part, modelUrl);
+                await loadPartStaticViews(containerId, part);
             }
         } catch (error) {
             console.error("Failed to load file:", error);
@@ -283,8 +275,6 @@ export function renderCNC() {
             is3JSPreviewDisabled && (fileExt === "step" || fileExt === "stp");
         if (!shouldSkip3DPreview) {
             loadPartModel(part, index);
-            // Prefetch front view for better initial load
-            prefetchPartFrontView(part.id);
         }
     }
 }

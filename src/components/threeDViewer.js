@@ -2,20 +2,10 @@
 // Handles 3D model viewing functionality using Three.js
 
 import {
-    Scene,
-    Color,
-    PerspectiveCamera,
-    WebGLRenderer,
-    AmbientLight,
-    DirectionalLight,
-    Box3,
-    Vector3,
-} from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import {
     uploadPartViews,
     getPartViewsManifest,
     getPartViewBlobUrl,
+    getPartModelBlobUrl,
 } from "../core/api/router.js";
 
 const VIEW_CONFIGS = [
@@ -33,14 +23,14 @@ const VIEW_CONFIGS = [
 // { partId: { 0: blobUrl, 1: blobUrl, ... } }
 const viewBlobCache = new Map();
 const viewTimers = new Map();
+const pendingViewLoads = new Map();
 
 /**
  * Load and display 8 static views for a part
  * @param {string} containerId - The ID of the container element
  * @param {Object} part - The part data
- * @param {string} modelUrl - URL to the GLTF/GLB model file
  */
-export async function loadPartStaticViews(containerId, part, modelUrl) {
+export async function loadPartStaticViews(containerId, part) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
@@ -52,30 +42,49 @@ export async function loadPartStaticViews(containerId, part, modelUrl) {
         return;
     }
 
-    // 2. Check if backend has views
-    try {
-        const manifest = await getPartViewsManifest(partId);
-        if (manifest && manifest.views && manifest.views.files) {
-            // Load only front view (index 0) initially if not already pre-fetched
-            if (!viewBlobCache.has(partId)) {
-                const frontBlobUrl = await getPartViewBlobUrl(partId, 0);
-                const views = {};
-                views[0] = frontBlobUrl;
-                viewBlobCache.set(partId, views);
-            }
-
+    // 2. Check if there is already a load in progress for this part
+    if (pendingViewLoads.has(partId)) {
+        try {
+            await pendingViewLoads.get(partId);
             displayEightViewInterface(containerId, partId);
-
-            // Load remaining 7 views in background
-            loadRemainingViews(partId);
-            return;
+        } catch (error) {
+            console.error("Pending view load failed:", error);
         }
-    } catch (error) {
-        console.error("Error checking views manifest:", error);
+        return;
     }
 
-    // 3. If no views, render them from model
-    renderAndUploadViews(containerId, part, modelUrl);
+    const loadTask = (async () => {
+        // 3. Check if backend has views
+        try {
+            const manifest = await getPartViewsManifest(partId);
+            if (manifest && manifest.views && manifest.views.files) {
+                // Load only front view (index 0) initially
+                const frontBlobUrl = await getPartViewBlobUrl(partId, 0);
+                viewBlobCache.set(partId, { 0: frontBlobUrl });
+                displayEightViewInterface(containerId, partId);
+                return;
+            }
+        } catch (error) {
+            console.error("Error checking views manifest:", error);
+        }
+
+        // 4. If no views, fetch the model and render them
+        try {
+            const modelUrl = await getPartModelBlobUrl(partId);
+            await renderAndUploadViews(containerId, part, modelUrl);
+        } catch (error) {
+            console.error("Failed to fetch model for view generation:", error);
+            container.innerHTML = `<div class="flex items-center justify-center h-full text-red-400 text-xs">Failed to load 3D model</div>`;
+            throw error;
+        }
+    })();
+
+    pendingViewLoads.set(partId, loadTask);
+    try {
+        await loadTask;
+    } finally {
+        pendingViewLoads.delete(partId);
+    }
 }
 
 /**
@@ -96,125 +105,128 @@ async function renderAndUploadViews(containerId, part, modelUrl) {
     `;
     container.appendChild(loadingIndicator);
 
-    const loader = new GLTFLoader();
-    loader.load(
-        modelUrl,
-        async (gltf) => {
-            const model = gltf.scene;
+    try {
+        // Dynamically import Three.js components only when needed
+        const [THREE, { GLTFLoader }] = await Promise.all([
+            import("three"),
+            import("three/examples/jsm/loaders/GLTFLoader.js"),
+        ]);
 
-            // Centering and scaling logic (reused from loadGLTFModel)
-            const box = new Box3().setFromObject(model);
-            const center = box.getCenter(new Vector3());
-            const size = box.getSize(new Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = maxDim > 0 ? 2 / maxDim : 1;
-            model.scale.multiplyScalar(scale);
-            model.position.sub(center.multiplyScalar(scale));
+        const loader = new GLTFLoader();
+        loader.load(
+            modelUrl,
+            async (gltf) => {
+                const model = gltf.scene;
 
-            const scene = new Scene();
-            // Transparent background to show container's oklab color
-            scene.background = null;
-            scene.add(model);
+                // Centering and scaling logic
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = maxDim > 0 ? 2 / maxDim : 1;
+                model.scale.multiplyScalar(scale);
+                model.position.sub(center.multiplyScalar(scale));
 
-            const ambientLight = new AmbientLight(0xffffff, 2);
-            scene.add(ambientLight);
-            const directionalLight = new DirectionalLight(0xffffff, 6);
-            directionalLight.position.set(5, 5, 5);
-            scene.add(directionalLight);
+                const scene = new THREE.Scene();
+                scene.background = null;
+                scene.add(model);
 
-            const width = 800;
-            const height = 400;
-            const padding = 20;
-            const contentWidth = width - padding * 2; // 760
-            const contentHeight = height - padding * 2; // 360
-
-            const renderer = new WebGLRenderer({
-                antialias: true,
-                alpha: true,
-                preserveDrawingBuffer: true,
-            });
-            renderer.setSize(width, height);
-
-            // Set background color for the rendered images
-            renderer.setClearColor(0x1f232c, 0.95);
-
-            const views = {};
-            const formData = new FormData();
-
-            // Use Orthographic camera for precise padding
-            const aspect = width / height;
-            for (let i = 0; i < VIEW_CONFIGS.length; i++) {
-                const config = VIEW_CONFIGS[i];
-
-                // Calculate camera bounds to include model with padding
-                // The model is scaled to fit in a 2x2x2 box centered at origin
-                const camera = new PerspectiveCamera(50, aspect, 0.1, 1000);
-                camera.position.set(...config.position);
-                camera.lookAt(...config.lookAt);
-
-                // Adjust camera distance to fit model with padding
-                // The model fits in a 2x2x2 box, so its max radius from origin is roughly sqrt(3)
-                // but we scaled it so max dimension is 2 (from -1 to 1).
-                // We want to fit this 2-unit bounding box into the content area.
-
-                const fovRad = (camera.fov * Math.PI) / 180;
-                const hFovRad = 2 * Math.atan(Math.tan(fovRad / 2) * aspect);
-
-                // Distance to fit 2 units in contentHeight (360px) of height (400px)
-                const distHeight =
-                    1 / Math.tan(fovRad / 2) / (contentHeight / height);
-                // Distance to fit 2 units in contentWidth (760px) of width (800px)
-                const distWidth =
-                    1 / Math.tan(hFovRad / 2) / (contentWidth / width);
-
-                // Use the larger distance to ensure it fits in both dimensions
-                const distance = Math.max(distHeight, distWidth);
-
-                // Update camera position based on normalized direction and calculated distance
-                const direction = new Vector3(...config.position).normalize();
-                camera.position.copy(direction.multiplyScalar(distance));
-
-                renderer.render(scene, camera);
-
-                const blob = await new Promise((resolve) =>
-                    renderer.domElement.toBlob(resolve, "image/png")
+                const ambientLight = new THREE.AmbientLight(0xffffff, 2);
+                scene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(
+                    0xffffff,
+                    6
                 );
-                const blobUrl = URL.createObjectURL(blob);
-                views[i] = blobUrl;
+                directionalLight.position.set(5, 5, 5);
+                scene.add(directionalLight);
 
-                formData.append(`view_${i}`, blob, `view_${i}.png`);
-            }
+                const width = 800;
+                const height = 400;
+                const padding = 20;
+                const contentWidth = width - padding * 2;
+                const contentHeight = height - padding * 2;
 
-            viewBlobCache.set(part.id, views);
-            loadingIndicator.remove();
-            displayEightViewInterface(containerId, part.id);
+                const renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    alpha: true,
+                    preserveDrawingBuffer: true,
+                });
+                renderer.setSize(width, height);
+                renderer.setClearColor(0x1f232c, 0.95);
 
-            // Upload to backend
-            try {
-                await uploadPartViews(part.id, formData);
-            } catch (error) {
-                console.error("Failed to upload views:", error);
-            }
+                const views = {};
+                const formData = new FormData();
+                const aspect = width / height;
 
-            // Cleanup Three.js
-            renderer.dispose();
-            model.traverse((child) => {
-                if (child.isMesh) {
-                    child.geometry.dispose();
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach((m) => m.dispose());
-                    } else {
-                        child.material.dispose();
-                    }
+                for (let i = 0; i < VIEW_CONFIGS.length; i++) {
+                    const config = VIEW_CONFIGS[i];
+                    const camera = new THREE.PerspectiveCamera(
+                        50,
+                        aspect,
+                        0.1,
+                        1000
+                    );
+                    camera.position.set(...config.position);
+                    camera.lookAt(...config.lookAt);
+
+                    const fovRad = (camera.fov * Math.PI) / 180;
+                    const hFovRad =
+                        2 * Math.atan(Math.tan(fovRad / 2) * aspect);
+                    const distHeight =
+                        1 / Math.tan(fovRad / 2) / (contentHeight / height);
+                    const distWidth =
+                        1 / Math.tan(hFovRad / 2) / (contentWidth / width);
+                    const distance = Math.max(distHeight, distWidth);
+
+                    const direction = new THREE.Vector3(
+                        ...config.position
+                    ).normalize();
+                    camera.position.copy(direction.multiplyScalar(distance));
+
+                    renderer.render(scene, camera);
+
+                    const blob = await new Promise((resolve) =>
+                        renderer.domElement.toBlob(resolve, "image/png")
+                    );
+                    const blobUrl = URL.createObjectURL(blob);
+                    views[i] = blobUrl;
+
+                    formData.append(`view_${i}`, blob, `view_${i}.png`);
                 }
-            });
-        },
-        undefined,
-        (error) => {
-            console.error("Error loading model for views:", error);
-            loadingIndicator.innerHTML = `<p class="text-red-400">Failed to generate views</p>`;
-        }
-    );
+
+                viewBlobCache.set(part.id, views);
+                loadingIndicator.remove();
+                displayEightViewInterface(containerId, part.id);
+
+                try {
+                    await uploadPartViews(part.id, formData);
+                } catch (error) {
+                    console.error("Failed to upload views:", error);
+                }
+
+                // Cleanup
+                renderer.dispose();
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.geometry.dispose();
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach((m) => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+            },
+            undefined,
+            (error) => {
+                console.error("Error loading model for views:", error);
+                loadingIndicator.innerHTML = `<p class="text-red-400">Failed to generate views</p>`;
+            }
+        );
+    } catch (error) {
+        console.error("Failed to load Three.js dependencies:", error);
+        loadingIndicator.innerHTML = `<p class="text-red-400">Failed to load viewer engine</p>`;
+    }
 }
 
 /**
@@ -222,17 +234,26 @@ async function renderAndUploadViews(containerId, part, modelUrl) {
  */
 async function loadRemainingViews(partId) {
     const views = viewBlobCache.get(partId) || {};
+    // Only load if not already loaded
+    const promises = [];
     for (let i = 1; i < 8; i++) {
         if (!views[i]) {
-            try {
-                const blobUrl = await getPartViewBlobUrl(partId, i);
-                views[i] = blobUrl;
-            } catch (error) {
-                console.error(`Failed to pre-fetch view ${i}:`, error);
-            }
+            promises.push(
+                (async () => {
+                    try {
+                        const blobUrl = await getPartViewBlobUrl(partId, i);
+                        views[i] = blobUrl;
+                    } catch (error) {
+                        console.error(`Failed to pre-fetch view ${i}:`, error);
+                    }
+                })()
+            );
         }
     }
-    viewBlobCache.set(partId, views);
+    if (promises.length > 0) {
+        await Promise.all(promises);
+        viewBlobCache.set(partId, views);
+    }
 }
 
 /**
@@ -268,6 +289,7 @@ function displayEightViewInterface(containerId, partId) {
     container.appendChild(indicator);
 
     let isDragging = false;
+    let hasTriggeredFullLoad = false;
     let startX = 0;
     const dragThreshold = 40;
 
@@ -290,6 +312,12 @@ function displayEightViewInterface(containerId, partId) {
         isDragging = true;
         startX = e.clientX || (e.touches && e.touches[0].clientX);
         resetTimer(partId);
+
+        // Load all views when the user interacts
+        if (!hasTriggeredFullLoad) {
+            hasTriggeredFullLoad = true;
+            loadRemainingViews(partId);
+        }
     };
 
     const handleMove = (e) => {
@@ -319,6 +347,7 @@ function displayEightViewInterface(containerId, partId) {
     const visibilityHandler = () => {
         if (document.hidden) {
             unloadExtraViews(partId);
+            hasTriggeredFullLoad = false;
         }
     };
     document.addEventListener("visibilitychange", visibilityHandler);
@@ -369,13 +398,24 @@ function unloadExtraViews(partId) {
  */
 export async function prefetchPartFrontView(partId) {
     if (viewBlobCache.has(partId)) return;
-    try {
-        const manifest = await getPartViewsManifest(partId);
-        if (manifest && manifest.views && manifest.views.files) {
-            const blobUrl = await getPartViewBlobUrl(partId, 0);
-            viewBlobCache.set(partId, { 0: blobUrl });
+    if (pendingViewLoads.has(partId)) return pendingViewLoads.get(partId);
+
+    const task = (async () => {
+        try {
+            const manifest = await getPartViewsManifest(partId);
+            if (manifest && manifest.views && manifest.views.files) {
+                const blobUrl = await getPartViewBlobUrl(partId, 0);
+                viewBlobCache.set(partId, { 0: blobUrl });
+            }
+        } catch (e) {
+            // Silently fail pre-fetch
         }
-    } catch (e) {
-        // Silently fail pre-fetch
+    })();
+
+    pendingViewLoads.set(partId, task);
+    try {
+        await task;
+    } finally {
+        pendingViewLoads.delete(partId);
     }
 }
