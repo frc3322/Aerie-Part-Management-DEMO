@@ -3,7 +3,10 @@
     border-radius: 15px;
     box-shadow: 8px 8px 16px #1a1d24, -8px -8px 16px #2c313c;
     border: 1px solid rgba(255,255,255,0.05);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+        transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .neumorphic-card:hover {
@@ -19,7 +22,10 @@
     border-radius: 15px;
     box-shadow: 8px 8px 16px #1a1d24, -8px -8px 16px #2c313c;
     border: 1px solid rgba(255,255,255,0.05);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+        transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .parts-list-surface:hover {
@@ -34,7 +40,10 @@
     border-radius: 15px;
     box-shadow: 8px 8px 16px #1a1d24, -8px -8px 16px #2c313c;
     border: 1px solid rgba(255,255,255,0.05);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+        transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .cnc-card:hover {
@@ -47,25 +56,68 @@
 .tab-btn {
     background: var(--surface-primary);
     border-radius: 15px;
+    position: relative;
+    isolation: isolate;
+    box-shadow: none;
+
+    /* state variables */
+    --ty: 0px;
+    --raised: 1;
+    --pressed: 0;
+
+    transform: translateY(var(--ty));
+    transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+}
+
+.tab-btn::before,
+.tab-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity;
+}
+
+/* Raised (outset) shadow layer */
+.tab-btn::before {
     box-shadow: 5px 5px 10px #1a1c24, -5px -5px 10px #2e3240;
-    transition: all 0.2s ease;
+    opacity: var(--raised);
+}
+
+/* Pressed (inset) shadow layer */
+.tab-btn::after {
+    box-shadow: inset 5px 5px 10px #1a1c24, inset -5px -5px 10px #2e3240;
+    opacity: var(--pressed);
 }
 
 .tab-btn:hover {
-    box-shadow: 7px 7px 14px #1a1c24, -7px -7px 14px #2e3240;
-    transform: translateY(-1px);
+    --ty: -1px;
 }
 
-.tab-btn:active {
-    box-shadow: inset 5px 5px 10px #1a1c24, inset -5px -5px 10px #2e3240;
-    transform: translateY(1px);
+.tab-btn:is(:active, .active-tab) {
+    --ty: 1px;
+    --raised: 0;
+    --pressed: 1;
+}
+
+.tab-btn.active-tab:hover {
+    --ty: -1px;
+    --raised: 1;
+    --pressed: 0;
+}
+
+.active-tab {
+    color: #63b3ed;
 }
 
 .neumorphic-btn {
     background: var(--bg-primary);
     border-radius: 6px;
     box-shadow: 5px 5px 10px #1a1c24, -5px -5px 10px #2e3240;
-    transition: all 0.2s ease;
+    transition: transform 200ms ease, box-shadow 200ms ease;
 }
 
 .neumorphic-btn:hover {
@@ -83,11 +135,6 @@
     box-shadow: inset 3px 3px 6px #1a1d24, inset -3px -3px 6px #2c313c;
     border: none;
     color: #cbd5e0;
-}
-
-.active-tab {
-    color: #63b3ed;
-    box-shadow: inset 5px 5px 10px #1a1c24, inset -5px -5px 10px #2e3240;
 }
 
 .pattern-grid-lg {

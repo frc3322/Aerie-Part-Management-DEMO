@@ -77,3 +77,14 @@
     }
 }
 
+@keyframes tabRaise {
+    0% {
+        box-shadow: inset 5px 5px 10px #1a1c24, inset -5px -5px 10px #2e3240;
+        transform: translateY(0);
+    }
+    100% {
+        box-shadow: 7px 7px 14px #1a1c24, -7px -7px 14px #2e3240;
+        transform: translateY(-1px);
+    }
+}
+
