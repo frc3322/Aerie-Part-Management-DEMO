@@ -74,6 +74,7 @@ import {
 import {
     markCompleted,
     markUncompleted,
+    markCompletedIncorrectly,
     approvePart,
     editPart,
     deletePart,
@@ -377,6 +378,7 @@ const actionExports = {
     handleFormKeyup,
     markCompleted,
     markUncompleted,
+    markCompletedIncorrectly,
     approvePart,
     editPart,
     deletePart,

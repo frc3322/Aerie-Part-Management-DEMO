@@ -18,9 +18,15 @@ export function generateEmptyMessageCompleted() {
     return '<i class="fa-solid fa-box-open text-4xl mb-3 opacity-50"></i><p>No completed parts yet.</p>';
 }
 
+function isCompletedIncorrectly(part) {
+    const misc = part.miscInfo || part.misc_info || {};
+    return Boolean(misc.completedIncorrectly);
+}
+
 function createCompletedCard(part, index) {
     const isCNC = part.type === "cnc";
     const showInfoButton = !appState.isMobile;
+    const completedIncorrectly = isCompletedIncorrectly(part);
     const card = document.createElement("div");
     card.className = "mobile-card";
     card.innerHTML = `
@@ -37,7 +43,15 @@ function createCompletedCard(part, index) {
         <span class="mobile-type-pill ${isCNC ? "type-cnc" : "type-hand"}">
           ${isCNC ? "CNC" : "HAND FAB"}
         </span>
-        <span class="mobile-status-pill status-completed">Completed</span>
+        <span class="mobile-status-pill status-completed ${
+            completedIncorrectly ? "bg-red-900 text-red-200" : ""
+        }">
+          ${
+              completedIncorrectly
+                  ? '<i class="fa-solid fa-triangle-exclamation mr-1"></i>'
+                  : ""
+          }Completed
+        </span>
       </div>
     </div>
     <div class="text-[11px] text-gray-400 mt-1">${part.subsystem || ""}</div>
@@ -49,6 +63,11 @@ function createCompletedCard(part, index) {
       </button>`
               : ""
       }
+      <button data-action="markCompletedIncorrectly" data-index="${index}" class="mobile-icon-btn ${
+        completedIncorrectly ? "text-green-300" : "text-orange-300"
+    }" aria-label="${completedIncorrectly ? "Mark Correct" : "Mark Incorrect"}">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </button>
       <button data-action="markUncompleted" data-index="${index}" class="mobile-icon-btn text-yellow-300" aria-label="Restore">
         <i class="fa-solid fa-rotate-left"></i>
       </button>
@@ -68,6 +87,7 @@ function createCompletedCard(part, index) {
  */
 export function createCompletedRow(part, index) {
     const isCNC = part.type === "cnc";
+    const completedIncorrectly = isCompletedIncorrectly(part);
     const row = document.createElement("tr");
     row.className = "part-row opacity-75 hover:opacity-100";
 
@@ -92,8 +112,16 @@ export function createCompletedRow(part, index) {
             part.material || "Not set"
         }</td>
         <td class="p-3">
-             <span class="px-2 py-1 rounded text-xs font-bold status-completed bg-gray-900 border border-gray-700 status-indicator">
-                Completed
+             <span class="px-2 py-1 rounded text-xs font-bold status-completed ${
+                 completedIncorrectly
+                     ? "bg-red-900 text-red-200 border border-red-700"
+                     : "bg-gray-900 border border-gray-700"
+             } status-indicator">
+                ${
+                    completedIncorrectly
+                        ? '<i class="fa-solid fa-triangle-exclamation mr-1"></i>'
+                        : ""
+                }Completed
             </span>
         </td>
         <td class="p-3 text-sm text-gray-500 max-w-xs truncate">${
@@ -101,6 +129,17 @@ export function createCompletedRow(part, index) {
         }</td>
         <td class="p-3 action-buttons">
             <button data-action="viewPartInfo" data-tab="completed" data-index="${index}" class="text-gray-400 hover:text-blue-300 mr-2" title="Info"><i class="fa-solid fa-circle-info"></i></button>
+            <button data-action="markCompletedIncorrectly" data-index="${index}" class="neumorphic-btn px-3 py-1 ${
+        completedIncorrectly
+            ? "text-green-400 hover:text-green-300"
+            : "text-orange-400 hover:text-orange-300"
+    } mr-2 text-sm" title="${
+        completedIncorrectly ? "Mark Correct" : "Mark Incorrect"
+    }">
+                <i class="fa-solid fa-triangle-exclamation"></i> ${
+                    completedIncorrectly ? "Mark Correct" : "Mark Incorrect"
+                }
+            </button>
             <button data-action="markUncompleted" data-index="${index}" class="neumorphic-btn px-3 py-1 text-yellow-400 hover:text-yellow-300 mr-2 text-sm" title="Un-complete (Restore)">
                 <i class="fa-solid fa-rotate-left"></i> Restore
             </button>

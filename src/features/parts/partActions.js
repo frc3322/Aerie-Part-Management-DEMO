@@ -264,6 +264,43 @@ export async function markUncompleted(index, event) {
 }
 
 /**
+ * Toggle completed incorrectly flag for a completed part
+ * @param {number} index - The index of the part in completed
+ * @param {Event} event - The click event
+ */
+export async function markCompletedIncorrectly(index, event) {
+    const part = appState.parts.completed[index];
+    const misc = part.miscInfo || part.misc_info || {};
+    const currentValue = Boolean(misc.completedIncorrectly);
+    const newMisc = { ...misc };
+    if (currentValue) {
+        delete newMisc.completedIncorrectly;
+    } else {
+        newMisc.completedIncorrectly = true;
+    }
+    const payload =
+        Object.keys(newMisc).length > 0
+            ? { miscInfo: newMisc }
+            : { miscInfo: null };
+    const button = event?.target.closest("button");
+    await withErrorHandling(
+        async () => {
+            const updatedPart = await apiUpdatePart(part.id, payload);
+            updatePartInState(part.id, updatedPart);
+            renderCompleted();
+        },
+        {
+            loadingTargets: button,
+            onError: () =>
+                showErrorNotification(
+                    "Update Failed",
+                    "Failed to update part. Please try again."
+                ),
+        }
+    );
+}
+
+/**
  * Approve a part from review and move to appropriate tab
  * @param {number} index - The index of the part in review
  * @param {Event} event - The click event
