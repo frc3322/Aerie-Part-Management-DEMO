@@ -554,3 +554,32 @@ export async function getPartDrawingBlobUrl(partId, options = {}) {
         throw error;
     }
 }
+
+/**
+ * Upload part views (dummy implementation)
+ * @param {number} partId - Part ID
+ * @param {Object} viewsData - Views data to upload
+ * @returns {Promise<Object>} Upload result
+ */
+export async function uploadPartViews(partId, viewsData) {
+    return {};
+}
+
+/**
+ * Get part views manifest (dummy implementation)
+ * @param {number} partId - Part ID
+ * @returns {Promise<Object>} Views manifest
+ */
+export async function getPartViewsManifest(partId) {
+    return {};
+}
+
+/**
+ * Get part view blob URL (dummy implementation)
+ * @param {number} partId - Part ID
+ * @param {string} viewId - View identifier
+ * @returns {Promise<string>} Blob URL to the view
+ */
+export async function getPartViewBlobUrl(partId, viewId) {
+    return "";
+}

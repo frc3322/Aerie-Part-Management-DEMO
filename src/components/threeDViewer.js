@@ -4,8 +4,9 @@
 /**
  * Show error message for 3D viewer initialization
  * @param {string} containerId - The ID of the container element
+ * @param {Object} part - The part data
  */
-export function initBasic3DViewer(containerId) {
+export async function loadPartStaticViews(containerId, part) {
     const container = document.getElementById(containerId);
     if (!container) return;
 

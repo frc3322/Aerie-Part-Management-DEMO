@@ -13,6 +13,9 @@ import { getApiKeyFromCookie } from "../auth/auth.js";
 
 // Simple cache for CAD model blob URLs
 const cadModelCache = new Map();
+const pendingModelRequests = new Map();
+const pendingViewRequests = new Map();
+const pendingManifestRequests = new Map();
 
 /**
  * Get all parts with optional filtering and pagination
@@ -197,30 +200,47 @@ export async function getPartModelBlobUrl(partId) {
         return cadModelCache.get(partId);
     }
 
-    // Use Vite's BASE_URL which respects the subpath configured during build
-    const base = import.meta.env.BASE_URL || "/";
-    const basePath = base === "/" ? "" : base.replace(/\/$/, "");
-    const url = basePath + `/api/parts/${partId}/model`;
-
-    const headers = {};
-    const apiKey = getApiKeyFromCookie();
-    if (apiKey) {
-        headers["X-API-Key"] = apiKey;
+    // Check if there is already a pending request for this part
+    if (pendingModelRequests.has(partId)) {
+        return pendingModelRequests.get(partId);
     }
 
-    const response = await fetch(url, { headers });
+    const request = (async () => {
+        try {
+            // Use Vite's BASE_URL which respects the subpath configured during build
+            const base = import.meta.env.BASE_URL || "/";
+            const basePath = base === "/" ? "" : base.replace(/\/$/, "");
+            const url = basePath + `/api/parts/${partId}/model`;
 
-    if (!response.ok) {
-        throw new Error(`Failed to load model: ${response.status}`);
-    }
+            const headers = {};
+            const apiKey = getApiKeyFromCookie();
+            if (apiKey) {
+                headers["X-API-Key"] = apiKey;
+            }
 
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
+            const response = await fetch(url, { headers });
 
-    // Cache the blob URL
-    cadModelCache.set(partId, blobUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to load model: ${response.status}`);
+            }
 
-    return blobUrl;
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            // Cache the blob URL
+            cadModelCache.set(partId, blobUrl);
+
+            return blobUrl;
+        } finally {
+            // Remove from pending requests map regardless of success/failure
+            pendingModelRequests.delete(partId);
+        }
+    })();
+
+    // Store the promise in the pending requests map
+    pendingModelRequests.set(partId, request);
+
+    return request;
 }
 
 /**
@@ -251,4 +271,79 @@ export async function getPartDrawingBlobUrl(partId, options = {}) {
 
     const blob = await response.blob();
     return URL.createObjectURL(blob);
+}
+
+/**
+ * Upload rendered views for a part
+ * @param {number} partId - Part ID
+ * @param {FormData} formData - Multipart form data with view blobs
+ * @returns {Promise<Object>} Upload result
+ */
+export async function uploadPartViews(partId, formData) {
+    return await apiPostMultipart(`/parts/${partId}/views`, formData);
+}
+
+/**
+ * Get views manifest for a part
+ * @param {number} partId - Part ID
+ * @returns {Promise<Object>} Views manifest
+ */
+export async function getPartViewsManifest(partId) {
+    if (pendingManifestRequests.has(partId)) {
+        return pendingManifestRequests.get(partId);
+    }
+
+    const request = (async () => {
+        try {
+            return await apiGet(`/parts/${partId}/views`);
+        } finally {
+            pendingManifestRequests.delete(partId);
+        }
+    })();
+
+    pendingManifestRequests.set(partId, request);
+    return request;
+}
+
+/**
+ * Get a specific view image as a blob URL
+ * @param {number} partId - Part ID
+ * @param {number} viewIndex - Index of the view (0-7)
+ * @returns {Promise<string>} Blob URL to the view image
+ */
+export async function getPartViewBlobUrl(partId, viewIndex) {
+    const cacheKey = `${partId}-${viewIndex}`;
+    if (pendingViewRequests.has(cacheKey)) {
+        return pendingViewRequests.get(cacheKey);
+    }
+
+    const request = (async () => {
+        try {
+            const base = import.meta.env.BASE_URL || "/";
+            const basePath = base === "/" ? "" : base.replace(/\/$/, "");
+            const url = basePath + `/api/parts/${partId}/views/${viewIndex}`;
+
+            const headers = {};
+            const apiKey = getApiKeyFromCookie();
+            if (apiKey) {
+                headers["X-API-Key"] = apiKey;
+            }
+
+            const response = await fetch(url, { headers });
+
+            if (!response.ok) {
+                throw new Error(
+                    `Failed to load view ${viewIndex}: ${response.status}`
+                );
+            }
+
+            const blob = await response.blob();
+            return URL.createObjectURL(blob);
+        } finally {
+            pendingViewRequests.delete(cacheKey);
+        }
+    })();
+
+    pendingViewRequests.set(cacheKey, request);
+    return request;
 }
