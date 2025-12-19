@@ -5,6 +5,8 @@
 [![Onshape](https://img.shields.io/badge/Integration-Onshape-00B2FF?style=for-the-badge&logo=onshape)](https://www.onshape.com/)
 [![FRC](https://img.shields.io/badge/FRC-3322-red?style=for-the-badge)](https://github.com/frc3322)
 
+!!This is the demo repo for [Arie-Part-Management](https://github.com/frc3322/Aerie-Part-Management)!! (has no backend, frontend only)
+
 A clean, modern, and efficient part management system designed specifically for FRC teams. Built with a focus on simplicity, visual clarity, and seamless Onshape integration.
 
 ## ✨ Key Features
@@ -28,42 +30,18 @@ A clean, modern, and efficient part management system designed specifically for 
 ### Backend
 - **Flask (Python)**: Robust and extensible RESTful API.
 - **SQLAlchemy**: Clean ORM for flexible database management (SQLite/PostgreSQL).
-- **uv**: Next-generation Python package management for lightning-fast setup.
-- **Cascadio**: Automatic STEP to GLB conversion engine.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - [Python 3.8+](https://www.python.org/)
 - [Node.js 16+](https://nodejs.org/)
-- [uv](https://github.com/astral-sh/uv) (recommended for Python management)
-
-### Quick Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/frc3322/part-management-system.git
-   cd part-management-system
-   ```
-
-2. **Run Backend**
-   ```bash
-   cd backend
-   uv pip install -r requirements.txt
-   uv run python deploy.py prod-muli --port 3030
-   ```
-
-3. **Access the App**
-   Open your browser and navigate to `http://localhost:3030`.
 
 ## 🛠️ Development
 
 To contribute or develop the system:
 
-1. **Start the Backend**
-   Follow the same steps as in **Quick Setup** to run the backend service using `deploy.py`.
-
-2. **Start Frontend Development Server**
+1. **Start Frontend Development Server**
    In a separate terminal, from the root directory, run:
    ```bash
    npm install
