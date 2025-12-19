@@ -162,7 +162,7 @@ The `src/html/` directory contains modular HTML templates that form the user int
           id="api-key"
           name="api_key"
           class="neumorphic-input w-full"
-          placeholder="Enter your API key"
+          placeholder="Enter anything for demo"
           required
         />
       </div>
