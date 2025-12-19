@@ -1,10 +1,10 @@
 <!-- Add/Edit Modal -->
 <div
     id="modal"
-    class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 backdrop-blur-sm"
+    class="fixed inset-0 bg-white/5 hidden items-center justify-center z-50 backdrop-blur-md"
 >
     <div
-        class="neumorphic-card p-8 w-full max-w-lg relative animate-fade-in max-h-[90vh] overflow-y-auto"
+        class="neumorphic-card p-8 w-full max-w-lg relative animate-scale-in max-h-[90vh] overflow-y-auto"
     >
         <button
             data-action="closeModal"
@@ -17,7 +17,7 @@
             Add New Part
         </h2>
 
-        <form id="part-form">
+        <form id="part-form" data-action="handleFormSubmit">
             <input type="hidden" id="edit-mode" value="false" />
             <input type="hidden" id="edit-index" value="" />
             <input type="hidden" id="edit-origin-tab" value="" />
@@ -45,7 +45,6 @@
                 <input
                     type="text"
                     id="input-name"
-                    data-action="handleFormKeyup"
                     class="neumorphic-input w-full p-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400"
                     required
                 />
@@ -58,7 +57,6 @@
                 <input
                     type="text"
                     id="input-part-id"
-                    data-action="handleFormKeyup"
                     class="neumorphic-input w-full p-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400"
                     required
                 />
@@ -221,7 +219,6 @@
                 </button>
                 <button
                     type="submit"
-                    data-action="handleFormSubmit"
                     class="neumorphic-btn px-8 py-2 rounded-lg text-blue-400 font-bold"
                 >
                     Save Part

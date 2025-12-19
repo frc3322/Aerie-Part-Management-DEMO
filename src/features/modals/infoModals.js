@@ -10,6 +10,11 @@ const loadRenderCNC = async () => {
     const { renderCNC } = await import("../tabs/cnc.js");
     return renderCNC;
 };
+import {
+    openModal as openManagedModal,
+    closeModal as closeManagedModal,
+    setModalLoading,
+} from "../../core/dom/modalManager.js";
 import { hideActionIconKey, showActionIconKey } from "../auth/auth.js";
 import { appState } from "../state/state.js";
 import { showErrorNotification } from "../../core/dom/notificationManager.js";
@@ -27,9 +32,9 @@ function ensureReviewModal() {
     const wrapper = document.createElement("div");
     wrapper.id = MODAL_IDS.review;
     wrapper.className =
-        "fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 backdrop-blur-sm";
+        "fixed inset-0 bg-white/5 hidden items-center justify-center z-50 backdrop-blur-md";
     wrapper.innerHTML = `
-    <div class="neumorphic-card p-6 w-full max-w-lg relative animate-fade-in max-h-[90vh] overflow-y-auto">
+    <div class="neumorphic-card p-6 w-full max-w-lg relative animate-scale-in max-h-[90vh] overflow-y-auto">
       <button id="review-misc-close" class="absolute top-4 right-4 text-gray-400 hover:text-red-400">
         <i class="fa-solid fa-times text-xl"></i>
       </button>
@@ -146,6 +151,7 @@ async function handleReviewSubmit(event) {
         closeReviewModal();
         return;
     }
+
     const reviewer = document.getElementById("reviewer-input")?.value?.trim();
     const misc = collectMiscInfo();
     const payload = {};
@@ -155,31 +161,21 @@ async function handleReviewSubmit(event) {
         payload.miscInfo.reviewer = reviewer;
     }
 
+    setModalLoading(MODAL_IDS.review, true);
     try {
-        console.log(
-            "[handleReviewSubmit] Before onSubmit - review count:",
-            reviewContext.part ? "N/A" : "N/A"
-        );
         await reviewContext.onSubmit(payload);
-        console.log(
-            "[handleReviewSubmit] After onSubmit - review count:",
-            appState.parts.review.length
-        );
         closeReviewModal();
-        console.log(
-            "[handleReviewSubmit] Rendering tabs - review count:",
-            appState.parts.review.length
-        );
         renderReview();
         (await loadRenderCNC())();
         renderHandFab();
-        console.log("[handleReviewSubmit] Done rendering");
     } catch (error) {
         console.error("Failed to submit review details", error);
         showErrorNotification(
             "Save Failed",
             "Failed to save review details. Please try again."
         );
+    } finally {
+        setModalLoading(MODAL_IDS.review, false);
     }
 }
 
@@ -188,9 +184,9 @@ function ensureInfoModal() {
     const wrapper = document.createElement("div");
     wrapper.id = MODAL_IDS.info;
     wrapper.className =
-        "fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 backdrop-blur-sm";
+        "fixed inset-0 bg-white/5 hidden items-center justify-center z-50 backdrop-blur-md";
     wrapper.innerHTML = `
-    <div class="neumorphic-card p-6 w-full max-w-lg relative animate-fade-in max-h-[80vh] overflow-y-auto">
+    <div class="neumorphic-card p-6 w-full max-w-lg relative animate-scale-in max-h-[80vh] overflow-y-auto">
       <button id="info-close" class="absolute top-4 right-4 text-gray-400 hover:text-red-400">
         <i class="fa-solid fa-times text-xl"></i>
       </button>
